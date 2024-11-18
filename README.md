@@ -1,2 +1,13 @@
 # eeg-32ch-example
-eeg-32ch-example
+
+[protobuf](https://github.com/BrainCoTech/eeg-32ch-protobuf)
+
+[Python 上位机](https://github.com/BrainCoTech/university-edu-eeg-32ch-tool/)
+
+[语雀文档](https://brainco.yuque.com/hocvv1/mmg6sz/sb5ggb0fv5uihmcu)
+
+```shell
+cd python
+pip install -r requirements.txt
+python eeg_cap_example.py
+```
