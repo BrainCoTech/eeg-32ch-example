@@ -1,0 +1,6 @@
+{
+  "type": "module",
+  "dependencies": {
+    "mdns": "^2.7.2"
+  }
+}

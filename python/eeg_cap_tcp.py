@@ -5,7 +5,7 @@ from bc_proto_sdk import MessageParser, MsgType, mdns_scan, PyTcpClient
 from eeg_cap_model import (
     EegSampleRate,
     EegSignalGain,
-    SignalSource,
+    EegSignalSource,
     ImuSampleRate,
     # WiFiSecurity,
     handle_message,
@@ -17,7 +17,8 @@ logger = getLogger(logging.INFO)
 
 ### main.py
 async def main():
-    # 获取设备地址, 扫描不到service时，可以对照[Discovery APP](https://apps.apple.com/cn/app/discovery-dns-sd-browser/id1381004916)
+    # 扫描不到service时，可以对照[Discovery APP](https://apps.apple.com/cn/app/discovery-dns-sd-browser/id1381004916)
+    # TODO: 有时无法扫描到service，等待固件排查修复
     (addr, port) = await mdns_scan()
     logger.info(addr)
 
@@ -39,10 +40,10 @@ async def main():
 
     # 配置EEG/IMU
     # await client.set_eeg_config(
-    #     EegSampleRate.SR_250Hz, EegSignalGain.GAIN_6, SignalSource.NORMAL
+    #     EegSampleRate.SR_250Hz, EegSignalGain.GAIN_6, EegSignalSource.NORMAL
     # )
     # await client.set_eeg_config(
-    #     EegSampleRate.SR_500Hz, EegSignalGain.GAIN_1, SignalSource.NORMAL
+    #     EegSampleRate.SR_500Hz, EegSignalGain.GAIN_1, EegSignalSource.NORMAL
     # )
     # await client.set_imu_config(ImuSampleRate.SR_50Hz)
     # await client.set_imu_config(ImuSampleRate.SR_100Hz)

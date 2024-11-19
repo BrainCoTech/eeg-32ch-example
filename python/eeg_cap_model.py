@@ -1,80 +1,103 @@
 from enum import IntEnum  # Enum declarations
 import json
-from bc_proto_sdk import parse_eeg_data
+from bc_proto_sdk import (
+    parse_eeg_data,
+    EegSampleRate,
+    EegSignalGain,
+    EegSignalSource,
+    ImuSampleRate,
+    WiFiSecurity,
+)
 import base64
 
+# import inspect
+# print("EegSignalGain methods and attributes:")
+# for name, member in inspect.getmembers(EegSignalGain):
+#     if inspect.isfunction(member):
+#         print(f"Method: {name}")
+#     elif not name.startswith("__"):
+#         print(f"Attribute: {name} = {member}")
+#     else:
+#         print(f"name: {name}, member:{member}")
 
-class EegSampleRate(IntEnum):
-    SR_NONE = 0x00
-    SR_250Hz = 0x6F
-    SR_500Hz = 0x5F
-    SR_1000Hz = 0x4F
-    SR_2000Hz = 0x3F
-    SR_4000Hz = 0x2F
-    SR_8000Hz = 0x1F
-    SR_16000Hz = 0x0F
+# class EegSampleRate(IntEnum):
+#     SR_NONE = 0x00
+#     SR_250Hz = 0x6F
+#     SR_500Hz = 0x5F
+#     SR_1000Hz = 0x4F
+#     SR_2000Hz = 0x3F
+#     SR_4000Hz = 0x2F
+#     SR_8000Hz = 0x1F
+#     SR_16000Hz = 0x0F
 
+# gain = EegSignalGain(0x3F)
+# print(gain)  # output EegSignalGain.GAIN_6
 
-# SignalGain 枚举
-class EegSignalGain(IntEnum):
-    GAIN_NONE = 0x00
-    GAIN_1 = 0x0F
-    GAIN_2 = 0x1F
-    GAIN_4 = 0x2F
-    GAIN_6 = 0x3F
-    GAIN_8 = 0x4F
-    GAIN_12 = 0x5F
-    GAIN_24 = 0x6F
-
-
-# SignalSource 枚举
-class SignalSource(IntEnum):
-    SIGNAL_NONE = 0x00
-    NORMAL = 0x0F
-    SHORTED = 0x1F
-    MVDD = 0x3F
-    TEST_SIGNAL = 0x5F
-
-
-class ImuSampleRate(IntEnum):
-    SR_NONE = 0
-    SR_50Hz = 1
-    SR_100Hz = 2
+# class EegSignalGain(IntEnum):
+#     GAIN_NONE = 0x00
+#     GAIN_1 = 0x0F
+#     GAIN_2 = 0x1F
+#     GAIN_4 = 0x2F
+#     GAIN_6 = 0x3F
+#     GAIN_8 = 0x4F
+#     GAIN_12 = 0x5F
+#     GAIN_24 = 0x6F
 
 
-class WiFiSecurity(IntEnum):
-    SECURITY_NONE = 0
-    SECURITY_OPEN = 1
-    SECURITY_WPA2_AES_PSK = 2
-    SECURITY_WPA2_TKIP_PSK = 3
-    SECURITY_WPA2_MIXED_PSK = 4
-    SECURITY_WPA_WPA2_TKIP_PSK = 5
-    SECURITY_WPA_WPA2_AES_PSK = 6
-    SECURITY_WPA_WPA2_MIXED_PSK = 7
-    SECURITY_WPA3_AES_PSK = 8
-    SECURITY_WPA2_WPA3_MIXED = 9
+# class EegSignalSource(IntEnum):
+#     SIGNAL_NONE = 0x00
+#     NORMAL = 0x0F
+#     SHORTED = 0x1F
+#     MVDD = 0x3F
+#     TEST_SIGNAL = 0x5F
+
+
+# class ImuSampleRate(IntEnum):
+#     SR_NONE = 0
+#     SR_50Hz = 1
+#     SR_100Hz = 2
+
+
+# class WiFiSecurity(IntEnum):
+#     SECURITY_NONE = 0
+#     SECURITY_OPEN = 1
+#     SECURITY_WPA2_AES_PSK = 2
+#     SECURITY_WPA2_TKIP_PSK = 3
+#     SECURITY_WPA2_MIXED_PSK = 4
+#     SECURITY_WPA_WPA2_TKIP_PSK = 5
+#     SECURITY_WPA_WPA2_AES_PSK = 6
+#     SECURITY_WPA_WPA2_MIXED_PSK = 7
+#     SECURITY_WPA3_AES_PSK = 8
+#     SECURITY_WPA2_WPA3_MIXED = 9
 
 
 # 定义 EEGData 类
 class EEGData:
 
-    def __init__(self, timestamp, data_bytes, gain):
+    def __init__(
+        self,
+        timestamp,
+        gain,
+        sample1,  # sample2, sample3, sample4 # TODO: currrent received sample1 data only
+    ):
         self.timestamp = timestamp
         self.gain = gain
-        # self.data = data_bytes
-        self.data = parse_eeg_data(data_bytes, gain.value)
+        self.sample1 = parse_eeg_data(sample1, gain)
 
     @staticmethod
-    def from_json(json_str, gain: EegSignalGain):
+    def from_json(json_str, gain: int):
         json_obj = json.loads(json_str)
-        eeg_data = json_obj["EEGCap"]["Mcu2App"]["eeg"]["data"]["sample1"]
-        # TODO: currrent received sample1 data only
-        timestamp = eeg_data["timestamp"]
-        data_bytes = base64.b64decode(eeg_data["data"].encode("utf-8"))
-        return EEGData(timestamp, data_bytes, gain)
+        sample1 = json_obj["EEGCap"]["Mcu2App"]["eeg"]["data"]["sample1"]
+
+        timestamp = sample1["timestamp"]
+        return EEGData(
+            timestamp,
+            gain,
+            base64.b64decode(sample1["data"].encode("utf-8")),
+        )
 
     def __repr__(self):
-        return f"EEGData(timestamp={self.timestamp}, eeg={list(self.data)})"
+        return f"EEGData(timestamp={self.timestamp}, sample1={list(self.sample1)})"
 
 
 # def parse_eeg_data(self, data_bytes, gain_value):
@@ -151,8 +174,9 @@ def handle_message(py_message, logger):
             "eeg" in message["EEGCap"]["Mcu2App"]
             and "data" in message["EEGCap"]["Mcu2App"]["eeg"]
         ):
-            eeg_data = EEGData.from_json(message_bytes, EegSignalGain.GAIN_6)
-            logger.info(f"eeg_data: {len(eeg_data.data)}")
+            gain = EegSignalGain.GAIN_6  # default is GAIN_6 # TODO: updated by eeg cfg
+            eeg_data = EEGData.from_json(message_bytes, gain)
+            logger.info(f"eeg_data: {len(eeg_data.sample1)}")
             # logger.info(f"eeg_data: {eeg_data}")
 
         elif "imu" in message["EEGCap"]["Mcu2App"]:

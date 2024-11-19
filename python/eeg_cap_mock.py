@@ -7,6 +7,7 @@ from eeg_cap_model import handle_message
 logger = getLogger(logging.DEBUG)
 # logger = getLogger(logging.INFO)
 
+
 ### main.py
 async def main():
     parser = MessageParser("mock-eeg-cap-device", MsgType.EEGCap)
@@ -14,6 +15,7 @@ async def main():
 
     logger.debug("Starting receiving data")
 
+    # fmt: off
     # EEG data
     parser.receive_data(bytes([66, 82, 78, 67, 2, 11, 121, 0, 0, 2, 0, 8, 1, 26, 117, 18, 115, 10, 113, 8, 213, 8, 18, 108,
         192, 0, 0, 17, 177, 229, 17, 176, 135, 17, 181, 47, 17, 189, 18, 17, 191, 248, 17, 184, 115,
