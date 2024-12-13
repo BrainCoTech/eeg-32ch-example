@@ -1,23 +1,68 @@
 let proto_sdk = null;
 let message_parser = null;
+let default_eeg_filter_enabled = true;
 
-async function initLogger() {
+let EegSampleRate;
+let EegSignalGain;
+let EegSignalSource;
+let ImuSampleRate;
+let WiFiSecurity;
+let NoiseTypes;
+
+async function initSDK() {
   if (proto_sdk) return;
-  console.debug("initLogger");
-  proto_sdk = await import("./pkg/bc_proto_sdk.js");
-  // console.debug("proto_sdk", proto_sdk);
 
+  console.debug("initSDK");
+  proto_sdk = await import("../pkg/bc_proto_sdk.js");
+  // console.log("proto_sdk", proto_sdk);
   // 初始化日志记录
   proto_sdk.init_logging("info");
+
   EegSampleRate = proto_sdk.EegSampleRate;
   EegSignalGain = proto_sdk.EegSignalGain;
   EegSignalSource = proto_sdk.EegSignalSource;
   ImuSampleRate = proto_sdk.ImuSampleRate;
   WiFiSecurity = proto_sdk.WiFiSecurity;
+  NoiseTypes = proto_sdk.NoiseTypes;
+
+  // 默认配置
+  // 250Hz采样率
+  // 2~45Hz bandpass
+  // 49~51Hz bandstop，去除环境噪声，50Hz电流干扰
+  const cfg = {
+    fs: 250,
+    enable_highpass: false,
+    high_cut: 0.5,
+    enable_lowpass: false,
+    low_cut: 49,
+    enable_bandpass: true,
+    bandpass_low: 2,
+    bandpass_high: 45,
+    enable_bandstop: true,
+    bandstop_low: 49,
+    bandstop_high: 51,
+  };
+  set_eeg_filter_cfg(cfg);
+}
+
+function set_eeg_filter_cfg(cfg) {
+  proto_sdk.set_eeg_filter_cfg(
+    cfg.enable_highpass,
+    cfg.high_cut,
+    cfg.enable_lowpass,
+    cfg.low_cut,
+    cfg.enable_bandpass,
+    cfg.bandpass_low,
+    cfg.bandpass_high,
+    cfg.enable_bandstop,
+    cfg.bandstop_low,
+    cfg.bandstop_high,
+    cfg.fs
+  );
 }
 
 async function initMsgParser() {
-  await initLogger();
+  await initSDK();
 
   if (message_parser) return;
   console.debug("initMsgParser");
@@ -25,7 +70,6 @@ async function initMsgParser() {
     "eeg-cap-device",
     proto_sdk.MsgType.EEGCap
   );
-
   listenMessages();
 }
 
@@ -70,8 +114,9 @@ function handleMessage(_message) {
     if (message.EEGCap.Mcu2App.eeg && message.EEGCap.Mcu2App.eeg.data) {
       const gain = EegSignalGain.GAIN_6; //  default is GAIN_6 // TODO: updated by eeg cfg
       const eegData = EEGData.fromJson(message.EEGCap.Mcu2App.eeg, gain);
-      logger.info(`eeg_data: ${eegData.sample1.length}`);
-      // logger.info(`eeg_data: ${eegData}`);
+      on_eeg_data(eegData.sample1);
+      // logger.info(`eeg_data: ${eegData.sample1.length}`);
+      logger.info(`eeg_data: ${eegData.toString()}`);
     } else if (message.EEGCap.Mcu2App.imu) {
       const imuData = message.EEGCap.Mcu2App.imu;
       logger.info(`imu_data: ${JSON.stringify(imuData)}`);
@@ -81,9 +126,47 @@ function handleMessage(_message) {
   }
 }
 
+// 32通道的EEG数据，二维数组
+let eeg_values = Array.from({ length: 32 }, () => []);
+let counter = 0;
+
+function on_eeg_data(sample1) {
+  for (let i = 0; i < 32; i++) {
+    eeg_values[i].push(sample1[i]);
+    // 每个通道最大保存1000个数据
+    if (eeg_values[i].length > 1000) {
+      eeg_values[i] = eeg_values[i].slice(-1000);
+    }
+  }
+
+  counter++;
+  if (counter % 250 === 0) {
+    // 每250次绘制一次数据
+    for (let i = 0; i < 32; i++) {
+      perform_filter(eeg_values[i]);
+    }
+    // TODO: 更新绘图
+    // update_eeg_plot();
+  }
+}
+
+// EEG数据滤波处理, channel_data为某个通道的数据
+function perform_filter(channel_data) {
+  if (default_eeg_filter_enabled) {
+    channel_data = proto_sdk.apply_eeg_filters(channel_data);
+    console.log("apply_eeg_filters", channel_data);
+    return channel_data;
+  } else {
+    // custom filter
+    channel_data = proto_sdk.apply_high_pass_filter(channel_data, 0.5, 250);
+    channel_data = proto_sdk.apply_band_stop_filter(channel_data, 49, 51, 250);
+    console.log("apply_custom_filter", channel_data);
+    return channel_data;
+  }
+}
+
 class EEGData {
   constructor(timestamp, gain, sample1) {
-    // sample2, sample3, sample4) { // TODO: current received sample1 data only
     this.timestamp = timestamp;
     this.gain = gain;
     this.sample1 = sample1;
@@ -92,7 +175,7 @@ class EEGData {
   static fromJson(eeg, gain) {
     const eegData = eeg.data.sample1;
     const timestamp = eegData.timestamp;
-    const sample1 = proto_sdk.parse_eeg_data(
+    var sample1 = proto_sdk.parse_eeg_data(
       Buffer.from(eegData.data, "base64"),
       gain
     );
@@ -137,57 +220,10 @@ function set_imu_config_builder(sr) {
   return proto_sdk.set_imu_config(sr);
 }
 
-let EegSampleRate;
-// SR_None = 0x00,
-// SR_250Hz = 0x6F,
-// SR_500Hz = 0x5F,
-// SR_1000Hz = 0x4F,
-// SR_2000Hz = 0x3F,
-// SR_4000Hz = 0x2F,
-// SR_8000Hz = 0x1F,
-// SR_16000Hz = 0x0F
-
-let EegSignalGain;
-// GAIN_NONE = 0x00,
-// GAIN_1 = 0x0F,
-// GAIN_2 = 0x1F,
-// GAIN_4 = 0x2F,
-// GAIN_6 = 0x3F,
-// GAIN_8 = 0x4F,
-// GAIN_12 = 0x5F,
-// GAIN_24 = 0x6F
-
-let EegSignalSource;
-// SIGNAL_NONE = 0x00,
-// NORMAL = 0x0F,
-// SHORTED = 0x1F,
-// MVDD = 0x3F,
-// TEST_SIGNAL = 0x5F
-
-let ImuSampleRate;
-// SR_NONE = 0, SR_50Hz = 1, SR_100Hz = 2
-
-let WiFiSecurity;
-// SECURITY_NONE = 0,
-// SECURITY_OPEN = 1,
-// SECURITY_WPA2_AES_PSK = 2,
-// SECURITY_WPA2_TKIP_PSK = 3,
-// SECURITY_WPA2_MIXED_PSK = 4,
-// SECURITY_WPA_WPA2_TKIP_PSK = 5,
-// SECURITY_WPA_WPA2_AES_PSK = 6,
-// SECURITY_WPA_WPA2_MIXED_PSK = 7,
-// SECURITY_WPA3_AES_PSK = 8,
-// SECURITY_WPA2_WPA3_MIXED = 9
-
 export {
-  initLogger,
+  initSDK,
   initMsgParser,
   receiveData,
-  EegSampleRate,
-  EegSignalGain,
-  EegSignalSource,
-  ImuSampleRate,
-  WiFiSecurity,
   get_eeg_config_builder,
   set_eeg_config_builder,
   start_eeg_stream_builder,
@@ -196,4 +232,10 @@ export {
   set_imu_config_builder,
   start_imu_stream_builder,
   stop_imu_stream_builder,
+  EegSampleRate,
+  EegSignalGain,
+  EegSignalSource,
+  ImuSampleRate,
+  WiFiSecurity,
+  NoiseTypes,
 };

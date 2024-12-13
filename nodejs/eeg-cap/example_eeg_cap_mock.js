@@ -1,7 +1,7 @@
 import {
   initMsgParser,
   receiveData,
-  EegSignalGain,  
+  // EegSignalGain,  
 } from "./example_eeg_cap.js";
 
 await initMsgParser();

@@ -1,15 +1,9 @@
 import asyncio
 import logging
 from logger import getLogger
-from bc_proto_sdk import MessageParser, MsgType, mdns_scan, PyTcpClient
-from eeg_cap_model import (
-    EegSampleRate,
-    EegSignalGain,
-    EegSignalSource,
-    ImuSampleRate,
-    # WiFiSecurity,
-    handle_message,
-)
+from bc_proto_sdk import MessageParser, MsgType, PyTcpClient
+import bc_proto_sdk
+from eeg_cap_model import handle_message
 
 # logger = getLogger(logging.DEBUG)
 logger = getLogger(logging.INFO)
@@ -19,7 +13,7 @@ logger = getLogger(logging.INFO)
 async def main():
     # 扫描不到service时，可以对照[Discovery APP](https://apps.apple.com/cn/app/discovery-dns-sd-browser/id1381004916)
     # TODO: 有时无法扫描到service，等待固件排查修复
-    (addr, port) = await mdns_scan()
+    (addr, port) = await bc_proto_sdk.eeg_cap.mdns_scan()
     logger.info(addr)
 
     # 创建消息解析器

@@ -1,75 +1,28 @@
-from enum import IntEnum  # Enum declarations
+# from enum import IntEnum  # Enum declarations
 import json
-from bc_proto_sdk import (
-    parse_eeg_data,
-    EegSampleRate,
-    EegSignalGain,
-    EegSignalSource,
-    ImuSampleRate,
-    WiFiSecurity,
-)
 import base64
+import bc_proto_sdk
+eeg_cap = bc_proto_sdk.eeg_cap
 
-# import inspect
-# print("EegSignalGain methods and attributes:")
-# for name, member in inspect.getmembers(EegSignalGain):
-#     if inspect.isfunction(member):
-#         print(f"Method: {name}")
-#     elif not name.startswith("__"):
-#         print(f"Attribute: {name} = {member}")
-#     else:
-#         print(f"name: {name}, member:{member}")
+# order: 4
+def perform_highpass(data: list, order: int, high_cut: float, fs: float):
+    return eeg_cap.apply_high_pass_filter(data, order, high_cut, fs)
 
-# class EegSampleRate(IntEnum):
-#     SR_NONE = 0x00
-#     SR_250Hz = 0x6F
-#     SR_500Hz = 0x5F
-#     SR_1000Hz = 0x4F
-#     SR_2000Hz = 0x3F
-#     SR_4000Hz = 0x2F
-#     SR_8000Hz = 0x1F
-#     SR_16000Hz = 0x0F
+def perform_lowpass(data: list, order: int, low_cut: float, fs: float):
+    return eeg_cap.apply_low_pass_filter(data, order, low_cut, fs)
 
-# gain = EegSignalGain(0x3F)
-# print(gain)  # output EegSignalGain.GAIN_6
+def perform_bandpass(data: list, order: int, low_cut: float, high_cut: float, fs: float):
+    return eeg_cap.apply_band_pass_filter(data, order, low_cut, high_cut, fs)
 
-# class EegSignalGain(IntEnum):
-#     GAIN_NONE = 0x00
-#     GAIN_1 = 0x0F
-#     GAIN_2 = 0x1F
-#     GAIN_4 = 0x2F
-#     GAIN_6 = 0x3F
-#     GAIN_8 = 0x4F
-#     GAIN_12 = 0x5F
-#     GAIN_24 = 0x6F
+def perform_bandstop(data: list, order: int, low_cut: float, high_cut: float, fs: float):
+    return eeg_cap.apply_band_stop_filter(data, order, low_cut, high_cut, fs)
 
+# 默认50Hz环境噪声滤波，fs=250Hz
+def set_env_noise_filter_cfg(type, fs: float):
+    return eeg_cap.set_env_noise_filter_cfg(type, fs)
 
-# class EegSignalSource(IntEnum):
-#     SIGNAL_NONE = 0x00
-#     NORMAL = 0x0F
-#     SHORTED = 0x1F
-#     MVDD = 0x3F
-#     TEST_SIGNAL = 0x5F
-
-
-# class ImuSampleRate(IntEnum):
-#     SR_NONE = 0
-#     SR_50Hz = 1
-#     SR_100Hz = 2
-
-
-# class WiFiSecurity(IntEnum):
-#     SECURITY_NONE = 0
-#     SECURITY_OPEN = 1
-#     SECURITY_WPA2_AES_PSK = 2
-#     SECURITY_WPA2_TKIP_PSK = 3
-#     SECURITY_WPA2_MIXED_PSK = 4
-#     SECURITY_WPA_WPA2_TKIP_PSK = 5
-#     SECURITY_WPA_WPA2_AES_PSK = 6
-#     SECURITY_WPA_WPA2_MIXED_PSK = 7
-#     SECURITY_WPA3_AES_PSK = 8
-#     SECURITY_WPA2_WPA3_MIXED = 9
-
+def remove_env_noise(data: bytearray):
+    return eeg_cap.remove_env_noise(data)
 
 # 定义 EEGData 类
 class EEGData:
@@ -78,11 +31,12 @@ class EEGData:
         self,
         timestamp,
         gain,
-        sample1,  # sample2, sample3, sample4 # TODO: currrent received sample1 data only
+        sample1,
     ):
         self.timestamp = timestamp
         self.gain = gain
-        self.sample1 = parse_eeg_data(sample1, gain)
+        self.sample1 = eeg_cap.parse_eeg_data(sample1, gain)
+        
 
     @staticmethod
     def from_json(json_str, gain: int):
@@ -98,16 +52,6 @@ class EEGData:
 
     def __repr__(self):
         return f"EEGData(timestamp={self.timestamp}, sample1={list(self.sample1)})"
-
-
-# def parse_eeg_data(self, data_bytes, gain_value):
-#     # 解析 EEG 数据
-#     buffer = []
-#     for i in range(0, len(data_bytes), 3):
-#         value = int.from_bytes(data_bytes[i : i + 3], byteorder="big", signed=True)
-#         voltage = float(value) * (2 * 4.5 / gain_value) / (2**24)
-#         buffer.append(voltage)
-#     return buffer
 
 
 class IMUCord:
@@ -152,7 +96,7 @@ class IMUData:
         return f"IMUData(timestamp={self.timestamp}, acc={self.acc}, gyro={self.gyro}, mag={self.mag})"
 
 
-def handle_message(py_message, logger):
+def handle_message(py_message, logger, on_eeg_data=None, on_imu_data=None):
     if py_message is None:
         logger.warning(f"Received None")
         return
@@ -174,10 +118,12 @@ def handle_message(py_message, logger):
             "eeg" in message["EEGCap"]["Mcu2App"]
             and "data" in message["EEGCap"]["Mcu2App"]["eeg"]
         ):
-            gain = EegSignalGain.GAIN_6  # default is GAIN_6 # TODO: updated by eeg cfg
+            gain = eeg_cap.EegSignalGain.GAIN_6  # default is GAIN_6 # TODO: updated by eeg cfg
             eeg_data = EEGData.from_json(message_bytes, gain)
             logger.info(f"eeg_data: {len(eeg_data.sample1)}")
-            # logger.info(f"eeg_data: {eeg_data}")
+            logger.debug(f"eeg_data: {eeg_data}")
+            if on_eeg_data is not None:
+                on_eeg_data(eeg_data)
 
         elif "imu" in message["EEGCap"]["Mcu2App"]:
             imu_data = IMUData.from_json(message_bytes)
