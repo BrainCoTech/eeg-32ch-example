@@ -4,5 +4,5 @@ colorlog
 logging
 # pyserial>=3.5
 # scipy
-# matplotlib
-# numpy
+matplotlib
+numpy
