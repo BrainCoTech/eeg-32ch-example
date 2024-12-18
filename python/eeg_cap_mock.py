@@ -3,7 +3,6 @@ import asyncio
 from bc_proto_sdk import MessageParser, MsgType, NoiseTypes
 from logger import getLogger
 from eeg_cap_model import handle_message, perform_bandpass, remove_env_noise, set_env_noise_filter_cfg
-# import scipy.signal as signal
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -27,7 +26,7 @@ def draw_eeg_data():
         plt.subplot(8, 4, i + 1)  # 创建8行4列的子图
         data = eeg_values[i]
         logger.debug(f"Raw data for channel {i}, {data}")
-        
+
         # 检查数据长度是否满足要求
         if len(data) > edge:  # 假设 edge 是 remove_env_noise 函数的最小数据长度要求
             data = remove_env_noise(data)
@@ -35,7 +34,7 @@ def draw_eeg_data():
             logger.debug(f"Drawing Filter data for channel {i}, {data}")
         else:
             logger.warning(f"Data length for channel {i} is too short for noise removal")
-        
+
         plt.plot(data, label=f"EEG Channel {i}")
         plt.legend()
         plt.xlabel("Time [s]")
@@ -51,15 +50,15 @@ def on_eeg_data(eeg_data):
     # eeg_data.sample1 长度为32，每个元素是一个通道的数据
     for i in range(32):
         eeg_values[i].append(eeg_data.sample1[i])
-        # 每个通道最大保存1000个数据  
+        # 每个通道最大保存1000个数据
         if len(eeg_values[i]) > 1000:
                 eeg_values[i] = eeg_values[i][-1000:]
-            
-    global counter
-    counter += 1
-    if counter % 2 == 0:
-        plt.clf()  # 清除当前图像
-        draw_eeg_data()
+
+    # global counter
+    # counter += 1
+    # if counter % 2 == 0:
+    #     plt.clf()  # 清除当前图像
+    #     draw_eeg_data()
 
 ### main.py
 async def main():
