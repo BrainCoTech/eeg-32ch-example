@@ -2,7 +2,7 @@ import logging
 import asyncio
 from bc_proto_sdk import MessageParser, MsgType, NoiseTypes
 from logger import getLogger
-from eeg_cap_model import handle_message, perform_bandpass, remove_env_noise, set_env_noise_filter_cfg
+from eeg_cap_model import eeg_cap, perform_bandpass, remove_env_noise, set_env_noise_filter_cfg, EEGData
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -16,59 +16,14 @@ low_cut = 2  # 低通滤波截止频率
 high_cut = 45  # 高通滤波截止频率
 edge = 10
 
-# 32通道的EEG数据，二维数组
-eeg_values = [[] for _ in range(32)]
-
-def draw_eeg_data():
-    global eeg_values
-    plt.figure(figsize=(20, 15))
-    for i in range(32):
-        plt.subplot(8, 4, i + 1)  # 创建8行4列的子图
-        data = eeg_values[i]
-        logger.debug(f"Raw data for channel {i}, {data}")
-
-        # 检查数据长度是否满足要求
-        if len(data) > edge:  # 假设 edge 是 remove_env_noise 函数的最小数据长度要求
-            data = remove_env_noise(data)
-            data = perform_bandpass(data, order, low_cut, high_cut, fs)
-            logger.debug(f"Drawing Filter data for channel {i}, {data}")
-        else:
-            logger.warning(f"Data length for channel {i} is too short for noise removal")
-
-        plt.plot(data, label=f"EEG Channel {i}")
-        plt.legend()
-        plt.xlabel("Time [s]")
-        plt.ylabel("Amplitude")
-        plt.title(f"EEG Channel {i}")
-        plt.grid(True)
-    plt.tight_layout()  # 调整子图间距
-    plt.show()
-
-counter = 0
 def on_eeg_data(eeg_data):
-    # logger.debug(f"Received EEG data, {type(eeg_data.sample1)}")
-    # eeg_data.sample1 长度为32，每个元素是一个通道的数据
-    for i in range(32):
-        eeg_values[i].append(eeg_data.sample1[i])
-        # 每个通道最大保存1000个数据
-        if len(eeg_values[i]) > 1000:
-                eeg_values[i] = eeg_values[i][-1000:]
-
-    # global counter
-    # counter += 1
-    # if counter % 2 == 0:
-    #     plt.clf()  # 清除当前图像
-    #     draw_eeg_data()
-
-### main.py
-async def main():
-    parser = MessageParser("mock-eeg-cap-device", MsgType.EEGCap)
-    message_stream = parser.get_message_stream()
-
-    set_env_noise_filter_cfg(NoiseTypes.FIFTY, fs)
-
+    logger.info(f"Received EEG data, eeg_data={eeg_data}")
+    logger.info(f"Received EEG data, {type(eeg_data)}")
+    
+    
+def mock_recv_data(parser):
     logger.debug("Starting receiving data")
-
+    
     # fmt: off
     # EEG data
     parser.receive_data(bytes([66, 82, 78, 67, 2, 11, 121, 0, 0, 2, 0, 8, 1, 26, 117, 18, 115, 10, 113, 8, 213, 8, 18, 108,
@@ -88,16 +43,36 @@ async def main():
         229, 12, 251, 200, 13, 20, 219, 12, 251, 65, 13, 40, 130, 12, 242, 249, 17, 184, 212, 17, 189,
         214, 174, 78,
     ]))
-
+    
     # IMU data
     parser.receive_data(bytes([66, 82, 78, 67, 2, 11, 55, 0, 0, 2, 0, 34, 53, 18, 51, 10, 15, 21, 0, 12, 226, 198, 29, 0, 8, 16, 70, 37, 0, 64, 206, 70, 18, 15, 21, 0, 8, 136, 197, 29, 0, 0, 160, 68, 37, 0, 64, 64, 196, 26, 15, 21, 0, 128, 139, 67, 29, 0, 0, 130, 194, 37, 0, 0, 114, 195, 171, 223]))
     parser.receive_data(bytes([66, 82, 78, 67, 2, 11, 55, 0, 0, 2, 0, 34, 53, 18, 51, 10, 15, 21, 0, 12, 236, 198, 29, 0, 8, 40, 70, 37, 0, 64, 188, 70, 18, 15, 21, 0, 8, 136, 197, 29, 0, 0, 128, 68, 37, 0, 64, 64, 196, 26, 15, 21, 0, 128, 141, 67, 29, 0, 0, 104, 194, 37, 0, 0, 112, 195, 145, 106]))
     logger.debug("Finished receiving data")
+    
+### main.py
+async def main():
+    set_env_noise_filter_cfg(NoiseTypes.FIFTY, fs) # 设置环境噪声滤波器，50Hz
+    
+    # set callback
+    # eeg_cap.set_eeg_data_callback(on_eeg_data)
+    
+    parser = MessageParser("mock-eeg-cap-device", MsgType.EEGCap)
+    await parser.start_message_stream()
+    mock_recv_data(parser)
+    
+    await asyncio.sleep(0.5)
+    
+    result = []
+    fetch_num = 2
+    eeg_buff = eeg_cap.get_eeg_buffer(fetch_num, False)
+    for i in range(len(eeg_buff)):
+        result.append(EEGData.from_data(eeg_buff[i]))
+        
+    result_str = '\n\t'.join(map(str, result))
+    logger.info(f"Got EEG buffer result:\n\t{result_str}")
 
-    async for py_message in message_stream:
-        handle_message(py_message, logger, on_eeg_data=on_eeg_data)
-
-    logger.info("Finished processing messages")
+    await asyncio.sleep(1)
+    logger.info("Done")
 
 
 asyncio.run(main())

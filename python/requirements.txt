@@ -1,10 +1,9 @@
-bc_proto_sdk==0.1.3
+bc_proto_sdk==0.1.6
 asyncio
 colorlog
 logging
-# pyserial>=3.5
-# scipy
 matplotlib
 numpy==1.26.4
+qasync
 pyqtgraph==0.12.4
 PySide6==6.4.2

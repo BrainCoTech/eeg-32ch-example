@@ -8,12 +8,15 @@
 
 [语雀文档](https://brainco.yuque.com/hocvv1/mmg6sz/sb5ggb0fv5uihmcu)
 
+[Docs](https://www.brainco-hz.com/docs/eeg-cap/product/eeg-cap.html)
+
 ## Python Example
 
 ```shell
 cd python
 pip install -r requirements.txt
 python eeg_cap_mock.py
+python eeg_cap_mock_qt.py
 python eeg_cap_tcp.py
 ```
 
