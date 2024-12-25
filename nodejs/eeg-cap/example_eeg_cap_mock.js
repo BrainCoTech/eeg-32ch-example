@@ -165,7 +165,6 @@ function mock_recv_data() {
   for (const msg of msgs) {
     receiveData(msg);
   }
-  return;
 
   // read from file, eeg_cap_sample_eeg.log
   console.log(path.resolve(__dirname, "eeg_cap_sample_eeg.log"));

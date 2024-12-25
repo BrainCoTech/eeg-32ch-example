@@ -23,8 +23,8 @@ python eeg_cap_tcp.py
 ## NodeJS Example
 
 ```shell
-cd nodejs
+cd nodejs/eeg-cap
 npm install
-node example_eeg_cap_mock.js
+# node example_eeg_cap_mock.js
 node example_eeg_cap_tcp.js
 ```

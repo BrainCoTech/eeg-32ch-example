@@ -43,9 +43,9 @@ const client = new net.Socket();
 
 // 如果已知IP地址和端口，可以直接指定
 // scan_service();
-// let addr = "192.168.3.7"; // hailong-dev
+let addr = "192.168.3.7"; // hailong-dev
 // let addr = "192.168.3.12"; // yongle-dev
-let addr = "192.168.3.23"; // xiangao-dev
+// let addr = "192.168.3.23"; // xiangao-dev
 let port = 53129;
 connectToService(addr, port);
 
@@ -111,7 +111,7 @@ async function connectToService(address, port) {
     sendCommand(client, proto_sdk.get_device_info);
 
     // 读取配置
-    // sendCommand(client, proto_sdk.get_eeg_config);
+    sendCommand(client, proto_sdk.get_eeg_config);
     sendCommand(client, proto_sdk.get_imu_config);
 
     // 配置EEG/IMU
@@ -142,7 +142,7 @@ async function connectToService(address, port) {
   client.on("data", (data) => {
     // print data, e.g. 0x01, 0x02, 0x03
     const hex = data.toString("hex").match(/.{2}/g).join(", 0x");
-    // console.debug("Received data:", `0x${hex}`);
+    console.debug("Received data:", `0x${hex}`);
     receiveData(data);
   });
 

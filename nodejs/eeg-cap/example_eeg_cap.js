@@ -16,8 +16,8 @@ async function initSDK() {
   proto_sdk = await import("../pkg/bc_proto_sdk.js");
   // console.log("proto_sdk", proto_sdk);
   // 初始化日志记录
-  // proto_sdk.init_logging("debug");
-  proto_sdk.init_logging("info");
+  proto_sdk.init_logging("debug");
+  // proto_sdk.init_logging("info");
 
   EegSampleRate = proto_sdk.EegSampleRate;
   EegSignalGain = proto_sdk.EegSignalGain;
