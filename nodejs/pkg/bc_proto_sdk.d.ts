@@ -1,6 +1,5 @@
 /* tslint:disable */
 /* eslint-disable */
-export function set_web_callback(cb: Function): void;
 export function init_logging(level: string): void;
 export function get_device_info(): any;
 export function start_eeg_stream(): any;
@@ -21,11 +20,13 @@ export function apply_highpass_filter(data: Float32Array, order: number, high_cu
 export function apply_lowpass_filter(data: Float32Array, order: number, low_cut: number, fs: number): Float32Array;
 export function apply_bandpass_filter(data: Float32Array, order: number, low_cut: number, high_cut: number, fs: number): Float32Array;
 export function apply_bandstop_filter(data: Float32Array, order: number, low_cut: number, high_cut: number, fs: number): Float32Array;
-export function parse_eeg_data(data: Uint8Array, gain: number): Float32Array;
+export function set_resp_callback(callback: Function): void;
 export function set_eeg_buffer_cfg(eeg_buffer_len: number): void;
 export function set_imu_buffer_cfg(imu_buffer_len: number): void;
 export function clear_eeg_buffer(): void;
 export function clear_imu_buffer(): void;
+export function set_web_callback(cb: Function): void;
+export function parse_eeg_data(data: Uint8Array, gain: number): Float32Array;
 export enum ActionCmd {
   SetStart = 1,
   SetFinish = 2,

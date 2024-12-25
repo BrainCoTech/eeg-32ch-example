@@ -32,6 +32,9 @@ function initCfg() {
   proto_sdk.set_env_noise_filter_cfg(NoiseTypes.FIFTY, fs); // 设置环境噪声滤波器，50Hz 电源干扰
   proto_sdk.set_eeg_buffer_cfg(eeg_buffer_length); // 设置EEG数据缓冲区长度
   proto_sdk.set_imu_buffer_cfg(imu_buffer_length); // 设置IMU数据缓冲区长度
+  proto_sdk.on("resp", (resp) => {
+    console.log("on msg resp", resp);
+  });
 }
 
 await initMsgParser();
@@ -43,9 +46,9 @@ const client = new net.Socket();
 
 // 如果已知IP地址和端口，可以直接指定
 // scan_service();
-let addr = "192.168.3.7"; // hailong-dev
+// let addr = "192.168.3.7"; // hailong-dev
 // let addr = "192.168.3.12"; // yongle-dev
-// let addr = "192.168.3.23"; // xiangao-dev
+let addr = "192.168.3.23"; // xiangao-dev
 let port = 53129;
 connectToService(addr, port);
 
@@ -111,8 +114,8 @@ async function connectToService(address, port) {
     sendCommand(client, proto_sdk.get_device_info);
 
     // 读取配置
-    sendCommand(client, proto_sdk.get_eeg_config);
-    sendCommand(client, proto_sdk.get_imu_config);
+    // sendCommand(client, proto_sdk.get_eeg_config);
+    // sendCommand(client, proto_sdk.get_imu_config);
 
     // 配置EEG/IMU
     // sendCommand(client, () =>
@@ -135,14 +138,14 @@ async function connectToService(address, port) {
     // 开始/停止EEG/IMU数据流
     // sendCommand(client, proto_sdk.stop_eeg_stream);
     // sendCommand(client, proto_sdk.stop_imu_stream);
-    sendCommand(client, proto_sdk.start_eeg_stream);
+    // sendCommand(client, proto_sdk.start_eeg_stream);
     // sendCommand(client, proto_sdk.start_imu_stream);
   });
 
   client.on("data", (data) => {
     // print data, e.g. 0x01, 0x02, 0x03
-    const hex = data.toString("hex").match(/.{2}/g).join(", 0x");
-    console.debug("Received data:", `0x${hex}`);
+    // const hex = data.toString("hex").match(/.{2}/g).join(", 0x");
+    // console.debug("Received data:", `0x${hex}`);
     receiveData(data);
   });
 

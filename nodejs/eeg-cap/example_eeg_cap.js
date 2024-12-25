@@ -16,8 +16,18 @@ async function initSDK() {
   proto_sdk = await import("../pkg/bc_proto_sdk.js");
   // console.log("proto_sdk", proto_sdk);
   // 初始化日志记录
-  proto_sdk.init_logging("debug");
-  // proto_sdk.init_logging("info");
+  // proto_sdk.init_logging("debug");
+  proto_sdk.init_logging("info");
+
+  // 用原始 proto_sdk 作为原型，创建一个新的对象
+  proto_sdk = Object.create(proto_sdk);
+
+  // 给新对象添加 on 方法
+  proto_sdk.on = function (eventName, callback) {
+    if (eventName === "resp") {
+      proto_sdk.set_resp_callback(callback);
+    }
+  };
 
   EegSampleRate = proto_sdk.EegSampleRate;
   EegSignalGain = proto_sdk.EegSignalGain;
@@ -94,7 +104,7 @@ function prepareEEGData(channel_data) {
 
     // 带通滤波, 2~45Hz
     data = proto_sdk.apply_bandpass_filter(data, order, lowCut, highCut, fs);
-    
+
     // channel_data = proto_sdk.apply_highpass_filter(channel_data, 0.5, 250);
     console.log("apply_custom_filter", channel_data);
     return channel_data;
