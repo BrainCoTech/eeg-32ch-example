@@ -16,6 +16,7 @@ async function initSDK() {
   proto_sdk = await import("../pkg/bc_proto_sdk.js");
   // console.log("proto_sdk", proto_sdk);
   // 初始化日志记录
+  // proto_sdk.init_logging("debug");
   proto_sdk.init_logging("info");
 
   EegSampleRate = proto_sdk.EegSampleRate;
@@ -70,7 +71,7 @@ async function initMsgParser() {
     "eeg-cap-device",
     proto_sdk.MsgType.EEGCap
   );
-  listenMessages();
+  await message_parser.start_message_stream();
 }
 
 // 处理接收到的数据
@@ -79,159 +80,35 @@ function receiveData(data) {
   message_parser.receive_data(uint8Array);
 }
 
-// 持续获取消息
-async function listenMessages() {
-  while (true) {
-    try {
-      // Fetch the next message
-      const message = await message_parser.next_message();
-      // console.log("Received message:", message);
-      handleMessage(message);
-    } catch (error) {
-      // Handle any errors that occur during message fetching
-      console.error("Error while fetching message:", error);
-    }
-    // Optional: consider add a delay to prevent the loop from consuming too much CPU
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  }
-}
-
-// const logger = require('./logger'); // 假设你有类似的日志记录器模块
-const logger = console;
-
-function handleMessage(_message) {
-  if (_message === null) {
-    logger.warn("Received None");
-    return;
-  }
-
-  const device_message = JSON.parse(_message);
-  // const device_id = device_message[0];
-  const message = device_message[1];
-
-  // 检查是否EEG数据
-  if (message.EEGCap && message.EEGCap.Mcu2App) {
-    if (message.EEGCap.Mcu2App.eeg && message.EEGCap.Mcu2App.eeg.data) {
-      const gain = EegSignalGain.GAIN_6; //  default is GAIN_6 // TODO: updated by eeg cfg
-      const eegData = EEGData.fromJson(message.EEGCap.Mcu2App.eeg, gain);
-      on_eeg_data(eegData.sample1);
-      // logger.info(`eeg_data: ${eegData.sample1.length}`);
-      logger.info(`eeg_data: ${eegData.toString()}`);
-    } else if (message.EEGCap.Mcu2App.imu) {
-      const imuData = message.EEGCap.Mcu2App.imu;
-      logger.info(`imu_data: ${JSON.stringify(imuData)}`);
-    }
-  } else {
-    logger.warn(`received message: ${_message}`);
-  }
-}
-
-// 32通道的EEG数据，二维数组
-let eeg_values = Array.from({ length: 32 }, () => []);
-let counter = 0;
-
-function on_eeg_data(sample1) {
-  for (let i = 0; i < 32; i++) {
-    eeg_values[i].push(sample1[i]);
-    // 每个通道最大保存1000个数据
-    if (eeg_values[i].length > 1000) {
-      eeg_values[i] = eeg_values[i].slice(-1000);
-    }
-  }
-
-  counter++;
-  if (counter % 250 === 0) {
-    // 每250次绘制一次数据
-    for (let i = 0; i < 32; i++) {
-      perform_filter(eeg_values[i]);
-    }
-    // TODO: 更新绘图
-    // update_eeg_plot();
-  }
-}
-
 // EEG数据滤波处理, channel_data为某个通道的数据
-function perform_filter(channel_data) {
+function prepareEEGData(channel_data) {
   if (default_eeg_filter_enabled) {
     channel_data = proto_sdk.apply_eeg_filters(channel_data);
-    console.log("apply_eeg_filters", channel_data);
+    // console.log("apply_eeg_filters", channel_data);
     return channel_data;
   } else {
     // custom filter
-    channel_data = proto_sdk.apply_high_pass_filter(channel_data, 0.5, 250);
-    channel_data = proto_sdk.apply_band_stop_filter(channel_data, 49, 51, 250);
+    // 去除环境噪声
+    // channel_data = proto_sdk.remove_env_noise(channel_data);
+    channel_data = proto_sdk.apply_bandstop_filter(channel_data, 49, 51, 250);
+
+    // 带通滤波, 2~45Hz
+    data = proto_sdk.apply_bandpass_filter(data, order, lowCut, highCut, fs);
+    
+    // channel_data = proto_sdk.apply_highpass_filter(channel_data, 0.5, 250);
     console.log("apply_custom_filter", channel_data);
     return channel_data;
   }
 }
 
-class EEGData {
-  constructor(timestamp, gain, sample1) {
-    this.timestamp = timestamp;
-    this.gain = gain;
-    this.sample1 = sample1;
-  }
-
-  static fromJson(eeg, gain) {
-    const eegData = eeg.data.sample1;
-    const timestamp = eegData.timestamp;
-    var sample1 = proto_sdk.parse_eeg_data(
-      Buffer.from(eegData.data, "base64"),
-      gain
-    );
-    return new EEGData(timestamp, gain, sample1);
-  }
-
-  toString() {
-    return `EEGData(timestamp=${this.timestamp},
-    sample1=${Array.from(this.sample1)})`;
-  }
-}
-
-function get_eeg_config_builder() {
-  return proto_sdk.get_eeg_config();
-}
-
-function set_eeg_config_builder(sr, gain, signal) {
-  return proto_sdk.set_eeg_config(sr, gain, signal);
-}
-
-function start_eeg_stream_builder() {
-  return proto_sdk.start_eeg_stream();
-}
-
-function stop_eeg_stream_builder() {
-  return proto_sdk.stop_eeg_stream();
-}
-
-function get_imu_config_builder() {
-  return proto_sdk.get_imu_config();
-}
-
-function start_imu_stream_builder() {
-  return proto_sdk.start_imu_stream();
-}
-
-function stop_imu_stream_builder() {
-  return proto_sdk.stop_imu_stream();
-}
-
-function set_imu_config_builder(sr) {
-  return proto_sdk.set_imu_config(sr);
-}
+// Buffer.from(eegData.data, "base64"),
 
 export {
+  proto_sdk,
   initSDK,
   initMsgParser,
   receiveData,
-  get_eeg_config_builder,
-  set_eeg_config_builder,
-  start_eeg_stream_builder,
-  stop_eeg_stream_builder,
-  get_imu_config_builder,
-  set_imu_config_builder,
-  start_imu_stream_builder,
-  stop_imu_stream_builder,
+  prepareEEGData,
   EegSampleRate,
   EegSignalGain,
   EegSignalSource,

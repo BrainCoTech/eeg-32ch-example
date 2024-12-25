@@ -2,78 +2,111 @@ import logging
 import asyncio
 from bc_proto_sdk import MessageParser, MsgType, NoiseTypes
 from logger import getLogger
-from eeg_cap_model import eeg_cap, perform_bandpass, remove_env_noise, set_env_noise_filter_cfg, EEGData
+from eeg_cap_model import (
+    eeg_cap,
+    EEGData,
+    IMUData,
+    set_env_noise_filter_cfg,
+    set_eeg_buffer_length,
+    set_imu_buffer_length,
+)
 import matplotlib.pyplot as plt
 import numpy as np
 
 logger = getLogger(logging.DEBUG)
 # logger = getLogger(logging.INFO)
 
-# 设定参数
-fs = 250  # 采样频率
-order = 4  # 滤波器阶数
-low_cut = 2  # 低通滤波截止频率
-high_cut = 45  # 高通滤波截止频率
-edge = 10
 
 def on_eeg_data(eeg_data):
     logger.info(f"Received EEG data, eeg_data={eeg_data}")
     logger.info(f"Received EEG data, {type(eeg_data)}")
-    
-    
+
+
 def mock_recv_data(parser):
     logger.debug("Starting receiving data")
-    
+
     # fmt: off
-    # EEG data
-    parser.receive_data(bytes([66, 82, 78, 67, 2, 11, 121, 0, 0, 2, 0, 8, 1, 26, 117, 18, 115, 10, 113, 8, 213, 8, 18, 108,
-        192, 0, 0, 17, 177, 229, 17, 176, 135, 17, 181, 47, 17, 189, 18, 17, 191, 248, 17, 184, 115,
-        17, 192, 86, 17, 194, 105, 192, 0, 0, 219, 237, 13, 221, 144, 42, 15, 77, 164, 13, 9, 104, 219,
-        221, 63, 217, 90, 108, 13, 27, 136, 13, 90, 223, 192, 0, 0, 13, 0, 65, 12, 234, 68, 17, 188,
-        254, 13, 219, 151, 12, 221, 3, 13, 18, 253, 16, 175, 80, 13, 14, 152, 192, 0, 0, 13, 28, 40,
-        13, 2, 123, 13, 28, 153, 13, 3, 246, 13, 40, 144, 12, 245, 37, 17, 191, 50, 17, 196, 51, 151,
-        63])
-    )
-    parser.receive_data(bytes([
-        66, 82, 78, 67, 2, 11, 121, 0, 0, 2, 0, 8, 1, 26, 117, 18, 115, 10, 113, 8, 214, 8, 18, 108,
-        192, 0, 0, 17, 171, 152, 17, 170, 61, 17, 174, 231, 17, 182, 195, 17, 185, 173, 17, 178, 41,
-        17, 186, 8, 17, 188, 33, 192, 0, 0, 219, 243, 101, 221, 150, 129, 15, 77, 190, 13, 6, 210, 219,
-        227, 131, 217, 96, 162, 13, 19, 229, 13, 90, 185, 192, 0, 0, 12, 255, 201, 12, 228, 181, 17,
-        182, 186, 13, 218, 119, 12, 219, 216, 13, 18, 5, 16, 174, 225, 13, 13, 50, 192, 0, 0, 13, 27,
-        229, 12, 251, 200, 13, 20, 219, 12, 251, 65, 13, 40, 130, 12, 242, 249, 17, 184, 212, 17, 189,
-        214, 174, 78,
-    ]))
+    msgs = [
+        # Device info
+        [0x42, 0x52, 0x4e, 0x43, 0x02, 0x0b, 0x27, 0x00, 0x00, 0x02, 0x00, 0x08, 0x02, 0x32, 0x23, 0x0a, 0x05, 0x45, 0x45, 0x47, 0x33, 0x32, 0x12, 0x0c, 0x45, 0x45, 0x47, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x22, 0x05, 0x31, 0x2e, 0x30, 0x2e, 0x30, 0x2a, 0x05, 0x30, 0x2e, 0x30, 0x2e, 0x36, 0xb1, 0x8c],
+        # empty response
+        [0x42, 0x52, 0x4e, 0x43, 0x02, 0x0b, 0x02, 0x00, 0x00, 0x02, 0x00, 0x08, 0x02, 0xac, 0x36],
+        # EEG config
+        [0x42, 0x52, 0x4e, 0x43, 0x02, 0x0b, 0x0c, 0x00, 0x00, 0x02, 0x00, 0x08, 0x03, 0x1a, 0x08, 0x0a, 0x06, 0x08, 0x6f, 0x10, 0x3f, 0x18, 0x0f, 0xd2, 0x00],
+        # IMU config
+        [0x42, 0x52, 0x4e, 0x43, 0x02, 0x0b, 0x08, 0x00, 0x00, 0x02, 0x00, 0x08, 0x03, 0x22, 0x04, 0x0a, 0x02, 0x08, 0x01, 0x4b, 0xf8],
+    ]
     
-    # IMU data
-    parser.receive_data(bytes([66, 82, 78, 67, 2, 11, 55, 0, 0, 2, 0, 34, 53, 18, 51, 10, 15, 21, 0, 12, 226, 198, 29, 0, 8, 16, 70, 37, 0, 64, 206, 70, 18, 15, 21, 0, 8, 136, 197, 29, 0, 0, 160, 68, 37, 0, 64, 64, 196, 26, 15, 21, 0, 128, 139, 67, 29, 0, 0, 130, 194, 37, 0, 0, 114, 195, 171, 223]))
-    parser.receive_data(bytes([66, 82, 78, 67, 2, 11, 55, 0, 0, 2, 0, 34, 53, 18, 51, 10, 15, 21, 0, 12, 236, 198, 29, 0, 8, 40, 70, 37, 0, 64, 188, 70, 18, 15, 21, 0, 8, 136, 197, 29, 0, 0, 128, 68, 37, 0, 64, 64, 196, 26, 15, 21, 0, 128, 141, 67, 29, 0, 0, 104, 194, 37, 0, 0, 112, 195, 145, 106]))
+    for msg in msgs:
+        parser.receive_data(bytes(msg))
+
+    # read from file 
+    # with open("eeg_cap_sample_eeg.log", "r") as f:
+    #     for line in f:
+    #         parser.receive_data(bytes([int(x, 16) for x in line.strip().split(", ")]))
+
+    with open("eeg_cap_sample_imu.log", "r") as f:
+        for line in f:
+            parser.receive_data(bytes([int(x, 16) for x in line.strip().split(", ")]))
+    
     logger.debug("Finished receiving data")
-    
+
+
+# EEG数据
+fs = 250  # 采样频率
+num_channels = 32  # 通道数
+eeg_buffer_length = 1000  # 默认缓冲区长度, 1000个数据点，每个数据点有32个通道，每个通道的值类型为float32，即4字节，大约占用128KB内存, 1000 * 32 * 4 = 128000 bytes
+eeg_seq_num = None  # EEG数据包序号
+eeg_values = np.zeros((num_channels, eeg_buffer_length))  # 32通道的EEG数据
+
+# 滤波器参数设置
+order = 4  # 滤波器阶数
+low_cut = 2  # 低通滤波截止频率
+high_cut = 45  # 高通滤波截止频率
+
+# IMU数据
+imu_buffer_length = 1000  # 默认缓冲区长度, 1000个数据点
+
+
+def init_cfg():
+    logger.info("Init cfg")
+    set_env_noise_filter_cfg(NoiseTypes.FIFTY, fs)  # 滤波器参数设置，去除50Hz电流干扰
+    set_eeg_buffer_length(eeg_buffer_length)  # 设置EEG数据缓冲区长度
+    set_imu_buffer_length(imu_buffer_length)  # 设置IMU数据缓冲区长度
+
+
 ### main.py
 async def main():
-    set_env_noise_filter_cfg(NoiseTypes.FIFTY, fs) # 设置环境噪声滤波器，50Hz
-    
+    init_cfg()
+
     # set callback
     # eeg_cap.set_eeg_data_callback(on_eeg_data)
-    
+
     parser = MessageParser("mock-eeg-cap-device", MsgType.EEGCap)
     await parser.start_message_stream()
     mock_recv_data(parser)
-    
+
     await asyncio.sleep(0.5)
-    
-    result = []
-    fetch_num = 2
+
+    eeg_result = []
+    fetch_num = 1000
     eeg_buff = eeg_cap.get_eeg_buffer(fetch_num, False)
     for i in range(len(eeg_buff)):
-        result.append(EEGData.from_data(eeg_buff[i]))
-        
-    result_str = '\n\t'.join(map(str, result))
+        eeg_result.append(EEGData.from_data(eeg_buff[i]))
+
+    result_str = "\n\t".join(map(str, eeg_result))
     logger.info(f"Got EEG buffer result:\n\t{result_str}")
+
+    imu_buff = eeg_cap.get_imu_buffer(fetch_num, False)
+    imu_result = []
+    for i in range(len(imu_buff)):
+        imu_result.append(IMUData.from_data(imu_buff[i]))
+        
+    result_str = "\n\t".join(map(str, imu_result))
+    logger.info(f"Got IMU buffer result:\n\t{result_str}")
 
     await asyncio.sleep(1)
     logger.info("Done")
 
 
 asyncio.run(main())
-

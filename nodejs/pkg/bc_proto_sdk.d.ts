@@ -1,10 +1,12 @@
 /* tslint:disable */
 /* eslint-disable */
 export function set_web_callback(cb: Function): void;
-export function parse_eeg_data(data: Uint8Array, gain: number): Float32Array;
 export function init_logging(level: string): void;
+export function get_device_info(): any;
 export function start_eeg_stream(): any;
 export function stop_eeg_stream(): any;
+export function get_eeg_data_buffer(take: number, clean: boolean): any;
+export function get_imu_data_buffer(take: number, clean: boolean): any;
 export function get_eeg_config(): any;
 export function set_eeg_config(sr: EegSampleRate, gain: EegSignalGain, signal: EegSignalSource): any;
 export function start_imu_stream(): any;
@@ -15,10 +17,15 @@ export function set_env_noise_filter_cfg(noise_type: NoiseTypes, fs: number): vo
 export function remove_env_noise(data: Float32Array): Float32Array;
 export function set_eeg_filter_cfg(high_pass_enabled: boolean, high_cut: number, low_pass_enabled: boolean, low_cut: number, band_pass_enabled: boolean, band_pass_low: number, band_pass_high: number, band_stop_enabled: boolean, band_stop_low: number, band_stop_high: number, fs: number): void;
 export function apply_eeg_filters(data: Float32Array): Float32Array;
-export function apply_high_pass_filter(data: Float32Array, high_cut: number, fs: number): Float32Array;
-export function apply_low_pass_filter(data: Float32Array, low_cut: number, fs: number): Float32Array;
-export function apply_band_pass_filter(data: Float32Array, low_cut: number, high_cut: number, fs: number): Float32Array;
-export function apply_band_stop_filter(data: Float32Array, low_cut: number, high_cut: number, fs: number): Float32Array;
+export function apply_highpass_filter(data: Float32Array, order: number, high_cut: number, fs: number): Float32Array;
+export function apply_lowpass_filter(data: Float32Array, order: number, low_cut: number, fs: number): Float32Array;
+export function apply_bandpass_filter(data: Float32Array, order: number, low_cut: number, high_cut: number, fs: number): Float32Array;
+export function apply_bandstop_filter(data: Float32Array, order: number, low_cut: number, high_cut: number, fs: number): Float32Array;
+export function parse_eeg_data(data: Uint8Array, gain: number): Float32Array;
+export function set_eeg_buffer_cfg(eeg_buffer_len: number): void;
+export function set_imu_buffer_cfg(imu_buffer_len: number): void;
+export function clear_eeg_buffer(): void;
+export function clear_imu_buffer(): void;
 export enum ActionCmd {
   SetStart = 1,
   SetFinish = 2,
@@ -307,6 +314,7 @@ export enum StarkModuleId {
   MCU = 1,
   MTR = 2,
   APP = 3,
+  SERIAL = 4,
 }
 export enum WiFiSecurity {
   SECURITY_NONE = 0,
@@ -376,6 +384,7 @@ export class MessageParser {
   constructor(device_id: string, msg_type: MsgType);
   receive_data(data: Uint8Array): void;
   next_message(): Promise<any>;
+  start_message_stream(): Promise<any>;
 }
 export class MotorStatusData {
   free(): void;
@@ -424,8 +433,9 @@ export class StarkOTA {
   stop_check_dfu_mode(): void;
   set_dfu_state_callback(cb: Function): void;
   set_dfu_progress_callback(cb: Function): void;
-  trigger_dfu_state(state: DfuState): void;
-  trigger_dfu_progress(progress: number): void;
+  trigger_dfu_state(state: DfuState): Promise<void>;
+  trigger_dfu_progress(progress: number): Promise<void>;
+  dfu_state: DfuState;
 }
 export class StarkSDK {
   private constructor();

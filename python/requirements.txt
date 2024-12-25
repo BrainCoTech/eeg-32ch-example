@@ -1,4 +1,4 @@
-bc_proto_sdk==0.1.6
+bc_proto_sdk==0.1.8
 asyncio
 colorlog
 logging

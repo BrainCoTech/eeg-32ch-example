@@ -79,6 +79,28 @@ const CLOSURE_DTORS = (typeof FinalizationRegistry === 'undefined')
     wasm.__wbindgen_export_2.get(state.dtor)(state.a, state.b)
 });
 
+function makeClosure(arg0, arg1, dtor, f) {
+    const state = { a: arg0, b: arg1, cnt: 1, dtor };
+    const real = (...args) => {
+        // First up with a closure we increment the internal reference
+        // count. This ensures that the Rust closure environment won't
+        // be deallocated while we're invoking it.
+        state.cnt++;
+        try {
+            return f(state.a, state.b, ...args);
+        } finally {
+            if (--state.cnt === 0) {
+                wasm.__wbindgen_export_2.get(state.dtor)(state.a, state.b);
+                state.a = 0;
+                CLOSURE_DTORS.unregister(state);
+            }
+        }
+    };
+    real.original = state;
+    CLOSURE_DTORS.register(real, state, state);
+    return real;
+}
+
 function makeMutClosure(arg0, arg1, dtor, f) {
     const state = { a: arg0, b: arg1, cnt: 1, dtor };
     const real = (...args) => {
@@ -96,28 +118,6 @@ function makeMutClosure(arg0, arg1, dtor, f) {
                 CLOSURE_DTORS.unregister(state);
             } else {
                 state.a = a;
-            }
-        }
-    };
-    real.original = state;
-    CLOSURE_DTORS.register(real, state, state);
-    return real;
-}
-
-function makeClosure(arg0, arg1, dtor, f) {
-    const state = { a: arg0, b: arg1, cnt: 1, dtor };
-    const real = (...args) => {
-        // First up with a closure we increment the internal reference
-        // count. This ensures that the Rust closure environment won't
-        // be deallocated while we're invoking it.
-        state.cnt++;
-        try {
-            return f(state.a, state.b, ...args);
-        } finally {
-            if (--state.cnt === 0) {
-                wasm.__wbindgen_export_2.get(state.dtor)(state.a, state.b);
-                state.a = 0;
-                CLOSURE_DTORS.unregister(state);
             }
         }
     };
@@ -260,6 +260,24 @@ function isLikeNone(x) {
     return x === undefined || x === null;
 }
 
+let stack_pointer = 128;
+
+function addBorrowedObject(obj) {
+    if (stack_pointer == 1) throw new Error('out of js stack');
+    heap[--stack_pointer] = obj;
+    return stack_pointer;
+}
+/**
+ * @param {Function} cb
+ */
+module.exports.set_web_callback = function(cb) {
+    try {
+        wasm.set_web_callback(addBorrowedObject(cb));
+    } finally {
+        heap[stack_pointer++] = undefined;
+    }
+};
+
 function passArray8ToWasm0(arg, malloc) {
     const ptr = malloc(arg.length * 1, 1) >>> 0;
     getUint8ArrayMemory0().set(arg, ptr / 1);
@@ -332,59 +350,6 @@ function getArrayI16FromWasm0(ptr, len) {
     ptr = ptr >>> 0;
     return getInt16ArrayMemory0().subarray(ptr / 2, ptr / 2 + len);
 }
-
-let stack_pointer = 128;
-
-function addBorrowedObject(obj) {
-    if (stack_pointer == 1) throw new Error('out of js stack');
-    heap[--stack_pointer] = obj;
-    return stack_pointer;
-}
-/**
- * @param {Function} cb
- */
-module.exports.set_web_callback = function(cb) {
-    try {
-        wasm.set_web_callback(addBorrowedObject(cb));
-    } finally {
-        heap[stack_pointer++] = undefined;
-    }
-};
-
-let cachedFloat32ArrayMemory0 = null;
-
-function getFloat32ArrayMemory0() {
-    if (cachedFloat32ArrayMemory0 === null || cachedFloat32ArrayMemory0.byteLength === 0) {
-        cachedFloat32ArrayMemory0 = new Float32Array(wasm.memory.buffer);
-    }
-    return cachedFloat32ArrayMemory0;
-}
-
-function getArrayF32FromWasm0(ptr, len) {
-    ptr = ptr >>> 0;
-    return getFloat32ArrayMemory0().subarray(ptr / 4, ptr / 4 + len);
-}
-/**
- * @param {Uint8Array} data
- * @param {number} gain
- * @returns {Float32Array}
- */
-module.exports.parse_eeg_data = function(data, gain) {
-    try {
-        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        const ptr0 = passArray8ToWasm0(data, wasm.__wbindgen_export_3);
-        const len0 = WASM_VECTOR_LEN;
-        wasm.parse_eeg_data(retptr, ptr0, len0, gain);
-        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
-        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-        var v2 = getArrayF32FromWasm0(r0, r1).slice();
-        wasm.__wbindgen_export_1(r0, r1 * 4, 4);
-        return v2;
-    } finally {
-        wasm.__wbindgen_add_to_stack_pointer(16);
-    }
-};
-
 /**
  * @param {string} level
  */
@@ -392,6 +357,14 @@ module.exports.init_logging = function(level) {
     const ptr0 = passStringToWasm0(level, wasm.__wbindgen_export_3, wasm.__wbindgen_export_4);
     const len0 = WASM_VECTOR_LEN;
     wasm.init_logging(ptr0, len0);
+};
+
+/**
+ * @returns {any}
+ */
+module.exports.get_device_info = function() {
+    const ret = wasm.get_device_info();
+    return takeObject(ret);
 };
 
 /**
@@ -407,6 +380,26 @@ module.exports.start_eeg_stream = function() {
  */
 module.exports.stop_eeg_stream = function() {
     const ret = wasm.stop_eeg_stream();
+    return takeObject(ret);
+};
+
+/**
+ * @param {number} take
+ * @param {boolean} clean
+ * @returns {any}
+ */
+module.exports.get_eeg_data_buffer = function(take, clean) {
+    const ret = wasm.get_eeg_data_buffer(take, clean);
+    return takeObject(ret);
+};
+
+/**
+ * @param {number} take
+ * @param {boolean} clean
+ * @returns {any}
+ */
+module.exports.get_imu_data_buffer = function(take, clean) {
+    const ret = wasm.get_imu_data_buffer(take, clean);
     return takeObject(ret);
 };
 
@@ -470,11 +463,25 @@ module.exports.set_env_noise_filter_cfg = function(noise_type, fs) {
     wasm.set_env_noise_filter_cfg(noise_type, fs);
 };
 
+let cachedFloat32ArrayMemory0 = null;
+
+function getFloat32ArrayMemory0() {
+    if (cachedFloat32ArrayMemory0 === null || cachedFloat32ArrayMemory0.byteLength === 0) {
+        cachedFloat32ArrayMemory0 = new Float32Array(wasm.memory.buffer);
+    }
+    return cachedFloat32ArrayMemory0;
+}
+
 function passArrayF32ToWasm0(arg, malloc) {
     const ptr = malloc(arg.length * 4, 4) >>> 0;
     getFloat32ArrayMemory0().set(arg, ptr / 4);
     WASM_VECTOR_LEN = arg.length;
     return ptr;
+}
+
+function getArrayF32FromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    return getFloat32ArrayMemory0().subarray(ptr / 4, ptr / 4 + len);
 }
 /**
  * @param {Float32Array} data
@@ -535,16 +542,17 @@ module.exports.apply_eeg_filters = function(data) {
 
 /**
  * @param {Float32Array} data
+ * @param {number} order
  * @param {number} high_cut
  * @param {number} fs
  * @returns {Float32Array}
  */
-module.exports.apply_high_pass_filter = function(data, high_cut, fs) {
+module.exports.apply_highpass_filter = function(data, order, high_cut, fs) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
         const ptr0 = passArrayF32ToWasm0(data, wasm.__wbindgen_export_3);
         const len0 = WASM_VECTOR_LEN;
-        wasm.apply_high_pass_filter(retptr, ptr0, len0, high_cut, fs);
+        wasm.apply_highpass_filter(retptr, ptr0, len0, order, high_cut, fs);
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         var v2 = getArrayF32FromWasm0(r0, r1).slice();
@@ -557,16 +565,17 @@ module.exports.apply_high_pass_filter = function(data, high_cut, fs) {
 
 /**
  * @param {Float32Array} data
+ * @param {number} order
  * @param {number} low_cut
  * @param {number} fs
  * @returns {Float32Array}
  */
-module.exports.apply_low_pass_filter = function(data, low_cut, fs) {
+module.exports.apply_lowpass_filter = function(data, order, low_cut, fs) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
         const ptr0 = passArrayF32ToWasm0(data, wasm.__wbindgen_export_3);
         const len0 = WASM_VECTOR_LEN;
-        wasm.apply_high_pass_filter(retptr, ptr0, len0, low_cut, fs);
+        wasm.apply_highpass_filter(retptr, ptr0, len0, order, low_cut, fs);
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         var v2 = getArrayF32FromWasm0(r0, r1).slice();
@@ -579,17 +588,18 @@ module.exports.apply_low_pass_filter = function(data, low_cut, fs) {
 
 /**
  * @param {Float32Array} data
+ * @param {number} order
  * @param {number} low_cut
  * @param {number} high_cut
  * @param {number} fs
  * @returns {Float32Array}
  */
-module.exports.apply_band_pass_filter = function(data, low_cut, high_cut, fs) {
+module.exports.apply_bandpass_filter = function(data, order, low_cut, high_cut, fs) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
         const ptr0 = passArrayF32ToWasm0(data, wasm.__wbindgen_export_3);
         const len0 = WASM_VECTOR_LEN;
-        wasm.apply_band_pass_filter(retptr, ptr0, len0, low_cut, high_cut, fs);
+        wasm.apply_bandpass_filter(retptr, ptr0, len0, order, low_cut, high_cut, fs);
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         var v2 = getArrayF32FromWasm0(r0, r1).slice();
@@ -602,17 +612,18 @@ module.exports.apply_band_pass_filter = function(data, low_cut, high_cut, fs) {
 
 /**
  * @param {Float32Array} data
+ * @param {number} order
  * @param {number} low_cut
  * @param {number} high_cut
  * @param {number} fs
  * @returns {Float32Array}
  */
-module.exports.apply_band_stop_filter = function(data, low_cut, high_cut, fs) {
+module.exports.apply_bandstop_filter = function(data, order, low_cut, high_cut, fs) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
         const ptr0 = passArrayF32ToWasm0(data, wasm.__wbindgen_export_3);
         const len0 = WASM_VECTOR_LEN;
-        wasm.apply_band_stop_filter(retptr, ptr0, len0, low_cut, high_cut, fs);
+        wasm.apply_bandstop_filter(retptr, ptr0, len0, order, low_cut, high_cut, fs);
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         var v2 = getArrayF32FromWasm0(r0, r1).slice();
@@ -621,6 +632,49 @@ module.exports.apply_band_stop_filter = function(data, low_cut, high_cut, fs) {
     } finally {
         wasm.__wbindgen_add_to_stack_pointer(16);
     }
+};
+
+/**
+ * @param {Uint8Array} data
+ * @param {number} gain
+ * @returns {Float32Array}
+ */
+module.exports.parse_eeg_data = function(data, gain) {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        const ptr0 = passArray8ToWasm0(data, wasm.__wbindgen_export_3);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.parse_eeg_data(retptr, ptr0, len0, gain);
+        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+        var v2 = getArrayF32FromWasm0(r0, r1).slice();
+        wasm.__wbindgen_export_1(r0, r1 * 4, 4);
+        return v2;
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+    }
+};
+
+/**
+ * @param {number} eeg_buffer_len
+ */
+module.exports.set_eeg_buffer_cfg = function(eeg_buffer_len) {
+    wasm.set_eeg_buffer_cfg(eeg_buffer_len);
+};
+
+/**
+ * @param {number} imu_buffer_len
+ */
+module.exports.set_imu_buffer_cfg = function(imu_buffer_len) {
+    wasm.set_imu_buffer_cfg(imu_buffer_len);
+};
+
+module.exports.clear_eeg_buffer = function() {
+    wasm.clear_eeg_buffer();
+};
+
+module.exports.clear_imu_buffer = function() {
+    wasm.clear_imu_buffer();
 };
 
 function __wbg_adapter_40(arg0, arg1) {
@@ -631,7 +685,7 @@ function __wbg_adapter_43(arg0, arg1, arg2) {
     wasm.__wbindgen_export_6(arg0, arg1, addHeapObject(arg2));
 }
 
-function __wbg_adapter_294(arg0, arg1, arg2, arg3) {
+function __wbg_adapter_304(arg0, arg1, arg2, arg3) {
     wasm.__wbindgen_export_7(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
 }
 
@@ -992,12 +1046,13 @@ module.exports.StarkError = Object.freeze({
     SystemIsBusy: 11, "11": "SystemIsBusy",
 });
 /**
- * @enum {1 | 2 | 3}
+ * @enum {1 | 2 | 3 | 4}
  */
 module.exports.StarkModuleId = Object.freeze({
     MCU: 1, "1": "MCU",
     MTR: 2, "2": "MTR",
     APP: 3, "3": "APP",
+    SERIAL: 4, "4": "SERIAL",
 });
 /**
  * @enum {0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9}
@@ -1679,6 +1734,13 @@ class MessageParser {
         const ret = wasm.messageparser_next_message(this.__wbg_ptr);
         return takeObject(ret);
     }
+    /**
+     * @returns {Promise<any>}
+     */
+    start_message_stream() {
+        const ret = wasm.messageparser_start_message_stream(this.__wbg_ptr);
+        return takeObject(ret);
+    }
 }
 module.exports.MessageParser = MessageParser;
 
@@ -1969,6 +2031,19 @@ class StarkOTA {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_starkota_free(ptr, 0);
     }
+    /**
+     * @returns {DfuState}
+     */
+    get dfu_state() {
+        const ret = wasm.__wbg_get_starkota_dfu_state(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @param {DfuState} arg0
+     */
+    set dfu_state(arg0) {
+        wasm.__wbg_set_starkota_dfu_state(this.__wbg_ptr, arg0);
+    }
     constructor() {
         const ret = wasm.starkota_new();
         this.__wbg_ptr = ret >>> 0;
@@ -2017,15 +2092,19 @@ class StarkOTA {
     }
     /**
      * @param {DfuState} state
+     * @returns {Promise<void>}
      */
     trigger_dfu_state(state) {
-        wasm.starkota_trigger_dfu_state(this.__wbg_ptr, state);
+        const ret = wasm.starkota_trigger_dfu_state(this.__wbg_ptr, state);
+        return takeObject(ret);
     }
     /**
      * @param {number} progress
+     * @returns {Promise<void>}
      */
     trigger_dfu_progress(progress) {
-        wasm.starkota_trigger_dfu_progress(this.__wbg_ptr, progress);
+        const ret = wasm.starkota_trigger_dfu_progress(this.__wbg_ptr, progress);
+        return takeObject(ret);
     }
 }
 module.exports.StarkOTA = StarkOTA;
@@ -3110,12 +3189,12 @@ module.exports.__wbg_measure_fb7825c11612c823 = function() { return handleError(
     }
 }, arguments) };
 
-module.exports.__wbg_modbusreadholdingregistervalues_207bf7f3799e93af = function(arg0, arg1, arg2) {
+module.exports.__wbg_modbusreadholdingregistervalues_86326bf5a877ad81 = function(arg0, arg1, arg2) {
     const ret = modbus_read_holding_register_values(arg0, arg1, arg2);
     return addHeapObject(ret);
 };
 
-module.exports.__wbg_modbusreadinputregistervalues_2b0d9e034530ba34 = function(arg0, arg1, arg2) {
+module.exports.__wbg_modbusreadinputregistervalues_c9d93aebe18eb420 = function(arg0, arg1, arg2) {
     const ret = modbus_read_input_register_values(arg0, arg1, arg2);
     return addHeapObject(ret);
 };
@@ -3127,7 +3206,7 @@ module.exports.__wbg_new_1e8ca58d170d6ad0 = function(arg0, arg1) {
             const a = state0.a;
             state0.a = 0;
             try {
-                return __wbg_adapter_294(a, state0.b, arg0, arg1);
+                return __wbg_adapter_304(a, state0.b, arg0, arg1);
             } finally {
                 state0.a = a;
             }
@@ -3196,7 +3275,7 @@ module.exports.__wbg_set_7b70226104a82921 = function(arg0, arg1, arg2) {
     getObject(arg0).set(getObject(arg1), arg2 >>> 0);
 };
 
-module.exports.__wbg_starkmodbuswrite_ab1d9a2a367f8213 = function(arg0, arg1, arg2, arg3) {
+module.exports.__wbg_starkmodbuswrite_8d6370e44ff0266c = function(arg0, arg1, arg2, arg3) {
     const ret = stark_modbus_write(arg0, arg1, getArrayU16FromWasm0(arg2, arg3));
     return addHeapObject(ret);
 };
@@ -3247,13 +3326,13 @@ module.exports.__wbindgen_cb_drop = function(arg0) {
     return ret;
 };
 
-module.exports.__wbindgen_closure_wrapper1580 = function(arg0, arg1, arg2) {
-    const ret = makeMutClosure(arg0, arg1, 589, __wbg_adapter_43);
+module.exports.__wbindgen_closure_wrapper1738 = function(arg0, arg1, arg2) {
+    const ret = makeClosure(arg0, arg1, 538, __wbg_adapter_40);
     return addHeapObject(ret);
 };
 
-module.exports.__wbindgen_closure_wrapper819 = function(arg0, arg1, arg2) {
-    const ret = makeClosure(arg0, arg1, 304, __wbg_adapter_40);
+module.exports.__wbindgen_closure_wrapper2256 = function(arg0, arg1, arg2) {
+    const ret = makeMutClosure(arg0, arg1, 808, __wbg_adapter_43);
     return addHeapObject(ret);
 };
 
