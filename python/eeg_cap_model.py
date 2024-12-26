@@ -4,6 +4,25 @@ import json
 import bc_proto_sdk
 eeg_cap = bc_proto_sdk.eeg_cap
 
+async def get_addr_port():
+    # 扫描不到service时，可以对照[Discovery APP](https://apps.apple.com/cn/app/discovery-dns-sd-browser/id1381004916)
+    # 扫描设备IP地址和端口
+    # 指定SN号，适用于有多个设备的情况
+    with_sn = "EEG123456789"
+    (addr, port) = await eeg_cap.start_scan(with_sn)
+    # 不指定SN号，返回第一个扫描到的设备
+    # (addr, port) = await eeg_cap.start_scan()
+    print(addr)
+    # 停止扫描
+    await eeg_cap.stop_scan()
+
+    # 如果已知IP地址和端口，可以直接指定
+    (addr, port) = ("192.168.3.7", 53129)  # hailong-dev
+    # (addr, port) = ("192.168.3.23", 53129)  # xiangao-dev
+    # (addr, port) = ("192.168.3.12", 53129) # yongle-dev
+
+    return (addr, port)
+
 
 # order: 4
 def perform_highpass(data: list, order: int, high_cut: float, fs: float):
@@ -42,7 +61,7 @@ class EEGData:
         self.channel_values = channel_values
 
     def __repr__(self):
-        return f"timestamp={self.timestamp}, len={len(self.channel_values)}"
+        return f"eeg timestamp={self.timestamp}, len={len(self.channel_values)}"
         # return f"EEGData(timestamp={self.timestamp}, channel_values={list(self.channel_values)})"
 
 
@@ -77,5 +96,5 @@ class IMUData:
         self.mag = IMUCord(mag[0], mag[1], mag[2])
 
     def __repr__(self):
-        # return f"imu timestamp={self.timestamp}"
-        return f"IMUData(timestamp={self.timestamp}, acc={self.acc}, gyro={self.gyro}, mag={self.mag})"
+        return f"imu timestamp={self.timestamp}"
+        # return f"IMUData(timestamp={self.timestamp}, acc={self.acc}, gyro={self.gyro}, mag={self.mag})"

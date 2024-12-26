@@ -11,6 +11,7 @@ from bc_proto_sdk import MessageParser, MsgType, PyTcpClient, NoiseTypes
 from eeg_cap_model import (
     EEGData,
     eeg_cap,
+    get_addr_port,
     perform_bandpass,
     set_env_noise_filter_cfg,
     remove_env_noise,
@@ -64,15 +65,7 @@ def update_plot():
 
 
 async def scan_and_connect(loop):
-    # 扫描不到service时，可以对照[Discovery APP](https://apps.apple.com/cn/app/discovery-dns-sd-browser/id1381004916)
-    # 扫描设备IP地址和端口, TODO: 有多个设备的情况
-    # (addr, port) = await bc_proto_sdk.eeg_cap.mdns_scan()
-    # logger.info(addr)
-
-    # 如果已知IP地址和端口，可以直接指定
-    (addr, port) = ("192.168.3.7", 53129)  # hailong-dev
-    (addr, port) = ("192.168.3.23", 53129)  # xiangao-dev
-    # (addr, port) = ("192.168.3.12", 53129) # yongle-dev
+    (addr, port) = await get_addr_port()
 
     # 创建消息解析器
     parser = MessageParser("eeg-cap-device", MsgType.EEGCap)

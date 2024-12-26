@@ -2,6 +2,7 @@ import asyncio
 import logging
 import binascii
 
+from eeg_cap_model import get_addr_port
 from logger import getLogger
 from bc_proto_sdk import MessageParser, MsgType, PyTcpClient
 
@@ -15,15 +16,13 @@ async def write_data_to_file(data_stream, f):
         formatted_data = ", ".join(
             f"0x{hex_data[i:i+2]}" for i in range(0, len(hex_data), 2)
         )
-        logger.info(f"data: {formatted_data}")
+        # logger.info(f"data: {formatted_data}")
+        logger.info(f"data len: {len(data)}")
         f.write(formatted_data + "\n")
 
 
 async def scan_and_connect():
-    # 如果已知IP地址和端口，可以直接指定
-    (addr, port) = ("192.168.3.7", 53129)  # hailong-dev
-    (addr, port) = ("192.168.3.23", 53129)  # xiangao-dev
-    # (addr, port) = ("192.168.3.12", 53129) # yongle-dev
+    (addr, port) = await get_addr_port()
 
     # 创建消息解析器
     parser = MessageParser("eeg-cap-device", MsgType.EEGCap)
@@ -35,13 +34,15 @@ async def scan_and_connect():
     # 连接设备
     await client.connect(parser)
 
-    await client.stop_eeg_stream()
-    await client.stop_imu_stream()
+    # await client.stop_eeg_stream()
+    # await client.stop_imu_stream()
+
+    await client.get_device_info()
+    await client.get_eeg_config()
+    await client.get_imu_config()
+
     await client.start_eeg_stream()
     # await client.start_imu_stream()
-    # await client.get_eeg_config()
-    # await client.get_imu_config()
-    # await client.get_device_info()
 
     with open("eeg-cap-msg.log", "w+") as f:
         write_task = asyncio.create_task(write_data_to_file(data_stream, f))
@@ -64,7 +65,6 @@ async def scan_and_connect():
         f.flush()
         f.close()
         logger.info("write data to file done")
-
 
 
 async def main():

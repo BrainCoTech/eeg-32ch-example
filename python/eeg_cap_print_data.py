@@ -8,6 +8,7 @@ from eeg_cap_model import (
     EEGData,
     IMUData,
     eeg_cap,
+    get_addr_port,
     perform_bandpass,
     set_env_noise_filter_cfg,
     remove_env_noise,
@@ -41,17 +42,20 @@ def print_imu_data():
     result_str = "\n\t".join(map(str, imu_result))
     logger.info(f"Got IMU buffer result:\n\t{result_str}")
 
+
 def print_eeg_data():
     # 获取EEG数据
     fetch_num = 100  # 每次获取的数据点数, 超过缓冲区长度时，返回缓冲区中的所有数据
     clean = True  # 是否清空缓冲区
     eeg_buff = eeg_cap.get_eeg_buffer(fetch_num, clean)
-    logger.info(f"get_eeg_buffer result len={len(eeg_buff)}")
+    logger.info(f"Got EEG buffer len={len(eeg_buff)}")
     if len(eeg_buff) == 0:
         return
 
+    eeg_data_arr = []
     for row in eeg_buff:
         eeg_data = EEGData.from_data(row)
+        eeg_data_arr.append(eeg_data)
 
         # 检查数据包序号
         timestamp = eeg_data.timestamp
@@ -62,34 +66,38 @@ def print_eeg_data():
         if eeg_seq_num is not None or timestamp == 2:  # 第一个数据包的时间戳有误
             eeg_seq_num = timestamp
 
-        channel_values = eeg_data.data
+        channel_values = eeg_data.channel_values
         # 更新每个通道的数据
         for i in range(len(channel_values)):
             eeg_values[i] = np.roll(eeg_values[i], -1)  # 数据向左滚动，腾出最后一个位置
             eeg_values[i, -1] = channel_values[i]  # 更新最新的数据值
 
     # 打印数据
+    print_eeg_timestamps(eeg_data_arr)
     for i in range(len(eeg_values)):
         raw_data = eeg_values[i]
         data = remove_env_noise(raw_data)
         data = perform_bandpass(data, order, low_cut, high_cut, fs)
         # 打印通道1数据
-        if i == 0:
+        # if i == 0:
             # logger.debug(f"raw_data: {raw_data}")
-            logger.debug(f"data: {data}")
+            # logger.debug(f"data: {data}")
             # logger.info(f"data len: {len(data)}")
 
+def print_eeg_timestamps(data):
+    if len(data) <= 6:
+        for item in data:
+            logger.info(f"{item}")
+        return
+
+    for item in data[:3]:
+        logger.info(f"{item}")
+    logger.info("...")
+    for item in data[-3:]:
+        logger.info(f"{item}")
 
 async def scan_and_connect():
-    # 扫描不到service时，可以对照[Discovery APP](https://apps.apple.com/cn/app/discovery-dns-sd-browser/id1381004916)
-    # 扫描设备IP地址和端口, TODO: 有多个设备的情况
-    # (addr, port) = await bc_proto_sdk.eeg_cap.mdns_scan()
-    # logger.info(addr)
-
-    # 如果已知IP地址和端口，可以直接指定
-    (addr, port) = ("192.168.3.7", 53129)  # hailong-dev
-    (addr, port) = ("192.168.3.23", 53129)  # xiangao-dev
-    # (addr, port) = ("192.168.3.12", 53129) # yongle-dev
+    (addr, port) = await get_addr_port()
 
     # 创建消息解析器
     parser = MessageParser("eeg-cap-device", MsgType.EEGCap)

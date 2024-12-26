@@ -17,7 +17,9 @@ cd python
 pip install -r requirements.txt
 python eeg_cap_mock.py
 python eeg_cap_mock_qt.py
-python eeg_cap_tcp.py
+python eeg_cap_print_data.py
+python eeg_cap_save_data.py
+python eeg_cap_qt.py
 ```
 
 ## NodeJS Example
