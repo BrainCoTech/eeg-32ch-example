@@ -6,7 +6,7 @@ import {
   NoiseTypes,
 } from "./example_eeg_cap.js";
 
-import { EEGData, IMUData } from "./example_eeg_cap_model.js";
+import { EEGData, IMUData, printTimestamp } from "./example_eeg_cap_model.js";
 
 import path from "path";
 import { fileURLToPath } from "url";
@@ -39,8 +39,8 @@ function initCfg() {
   proto_sdk.set_env_noise_filter_cfg(NoiseTypes.FIFTY, fs); // 设置环境噪声滤波器，50Hz 电源干扰
   proto_sdk.set_eeg_buffer_cfg(eeg_buffer_length); // 设置EEG数据缓冲区长度
   proto_sdk.set_imu_buffer_cfg(imu_buffer_length); // 设置IMU数据缓冲区长度
-  proto_sdk.on('resp', (resp) => {
-    console.log('on msg resp', resp);
+  proto_sdk.on("resp", (resp) => {
+    console.log("on msg resp", resp);
   });
 }
 
@@ -50,11 +50,15 @@ function updateEegChart() {
   const clean = true; // 是否清空缓冲区
   let json = proto_sdk.get_eeg_data_buffer(fetch_num, clean);
   let eegBuff = JSON.parse(json);
+  if (eegBuff.length <= 0) {
+    return;
+  }
   console.log(`eegBuff, len=${eegBuff.length}`);
-  for (const row of eegBuff) {
-    const eegData = EEGData.fromData(row);
-    const channelValues = eegData.channelValues;
+  let list = eegBuff.map((row) => EEGData.fromData(row));
+  printTimestamp(list);
 
+  for (const row of list) {
+    const channelValues = row.channelValues;
     // 更新每个通道的数据
     for (let i = 0; i < channelValues.length; i++) {
       eegValues[i].shift(); // 移除第一个元素
@@ -68,21 +72,6 @@ function updateEegChart() {
     const data = prepareEEGData(rawData);
     // updatePlotlyChart(i, data);
   }
-
-  if (eegBuff.length < 6) {
-    console.log("eegBuff.lengh", eegBuff.length);
-    return;
-  }
-  // 只打印前3及最后3条EEG数据
-  for (let i = 0; i < 3; i++) {
-    const eegData = EEGData.fromData(eegBuff[i]);
-    console.log("timestamp", eegData.timestamp);
-  }
-  console.log("...");
-  for (let i = eegBuff.length - 3; i < eegBuff.length; i++) {
-    const eegData = EEGData.fromData(eegBuff[i]);
-    console.log("timestamp", eegData.timestamp);
-  }
 }
 
 function printImuData() {
@@ -90,40 +79,23 @@ function printImuData() {
   const clean = true; // 是否清空缓冲区
   let json = proto_sdk.get_imu_data_buffer(fetch_num, clean);
   let imuBuff = JSON.parse(json);
-  console.log(`imuBuff, len=${imuBuff.length}`);
-
-  if (imuBuff.length < 6) {
-    console.log("imuBuff.lengh", imuBuff.length);
+  if (imuBuff.length <= 0) {
     return;
   }
-
-  // 只打印前3及最后3条IMU数据
-  for (let i = 0; i < 3; i++) {
-    const row = imuBuff[i];
-    const imuData = IMUData.fromData(row);
-    console.log("imuData", imuData.timestamp);
-  }
-  console.log("...");
-  for (let i = imuBuff.length - 3; i < imuBuff.length; i++) {
-    const row = imuBuff[i];
-    const imuData = IMUData.fromData(row);
-    console.log("imuData", imuData.timestamp);
-  }
-  // for (const row of imuBuff) {
-  //   const imuData = IMUData.fromData(row);
-  //   console.log("imuData", imuData);
-  // }
+  console.log(`imuBuff, len=${imuBuff.length}`);
+  let list = imuBuff.map((row) => IMUData.fromData(row));
+  printTimestamp(list);
 }
-
-// TODO: IMPLEMENT JS callback
-// eeg_cap_sdk.on("EEGData", (data) => {
-//   console.log("EEGData", data);
-// });
 
 function mock_recv_data() {
   console.log("mock_recv_data");
   const msgs = [
-    // Device info
+    // empty response
+    [
+      0x42, 0x52, 0x4e, 0x43, 0x02, 0x0b, 0x02, 0x00, 0x00, 0x02, 0x00, 0x08,
+      0x02, 0xac, 0x36,
+    ],
+    // Device info response
     [
       0x42, 0x52, 0x4e, 0x43, 0x02, 0x0b, 0x27, 0x00, 0x00, 0x02, 0x00, 0x08,
       0x02, 0x32, 0x23, 0x0a, 0x05, 0x45, 0x45, 0x47, 0x33, 0x32, 0x12, 0x0c,
@@ -131,44 +103,22 @@ function mock_recv_data() {
       0x22, 0x05, 0x31, 0x2e, 0x30, 0x2e, 0x30, 0x2a, 0x05, 0x30, 0x2e, 0x30,
       0x2e, 0x36, 0xb1, 0x8c,
     ],
-    // empty response
-    [
-      0x42, 0x52, 0x4e, 0x43, 0x02, 0x0b, 0x02, 0x00, 0x00, 0x02, 0x00, 0x08,
-      0x02, 0xac, 0x36,
-    ],
-    // EEG config
+    // EEG config response
     [
       0x42, 0x52, 0x4e, 0x43, 0x02, 0x0b, 0x0c, 0x00, 0x00, 0x02, 0x00, 0x08,
       0x03, 0x1a, 0x08, 0x0a, 0x06, 0x08, 0x6f, 0x10, 0x3f, 0x18, 0x0f, 0xd2,
       0x00,
     ],
-    // IMU config
+    // IMU config response
     [
       0x42, 0x52, 0x4e, 0x43, 0x02, 0x0b, 0x08, 0x00, 0x00, 0x02, 0x00, 0x08,
       0x03, 0x22, 0x04, 0x0a, 0x02, 0x08, 0x01, 0x4b, 0xf8,
     ],
-
-    // [
-    //   0x42, 0x52, 0x4e, 0x43, 0x02, 0x0b, 0x27, 0x00, 0x00, 0x02, 0x00, 0x08,
-    //   0x01, 0x32, 0x23, 0x0a, 0x05, 0x45, 0x45, 0x47, 0x33, 0x32, 0x12, 0x0c,
-    //   0x45, 0x45, 0x47, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39,
-    //   0x22, 0x05, 0x31, 0x2e, 0x30, 0x2e, 0x30, 0x2a, 0x05, 0x30, 0x2e, 0x30,
-    //   0x2e, 0x36, 0x01, 0x96,
-    // ],
-    // [
-    //   0x42, 0x52, 0x4e, 0x43, 0x02, 0x0b, 0x0c, 0x00, 0x00, 0x02, 0x00, 0x08,
-    //   0x03, 0x1a, 0x08, 0x0a, 0x06, 0x08, 0x6f, 0x10, 0x3f, 0x18, 0x0f, 0xd2,
-    //   0x00,
-    // ],
-    // [
-    //   0x42, 0x52, 0x4e, 0x43, 0x02, 0x0b, 0x08, 0x00, 0x00, 0x02, 0x00, 0x08,
-    //   0x03, 0x22, 0x04, 0x0a, 0x02, 0x08, 0x01, 0x4b, 0xf8,
-    // ],
   ];
   for (const msg of msgs) {
     receiveData(msg);
   }
-  return;
+  // return;
 
   // read from file, eeg_cap_sample_eeg.log
   console.log(path.resolve(__dirname, "eeg_cap_sample_eeg.log"));

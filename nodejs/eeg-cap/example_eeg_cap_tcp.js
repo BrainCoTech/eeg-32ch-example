@@ -12,7 +12,7 @@ import {
   ImuSampleRate,
 } from "./example_eeg_cap.js";
 
-import { EEGData, IMUData } from "./example_eeg_cap_model.js";
+import { EEGData, IMUData, printTimestamp } from "./example_eeg_cap_model.js";
 
 // EEG数据
 const fs = 250; // 采样频率
@@ -111,7 +111,7 @@ async function connectToService(address, port) {
     // await initMsgParser();
 
     // 读取设备信息
-    sendCommand(client, proto_sdk.get_device_info);
+    // sendCommand(client, proto_sdk.get_device_info);
 
     // 读取配置
     // sendCommand(client, proto_sdk.get_eeg_config);
@@ -138,8 +138,8 @@ async function connectToService(address, port) {
     // 开始/停止EEG/IMU数据流
     // sendCommand(client, proto_sdk.stop_eeg_stream);
     // sendCommand(client, proto_sdk.stop_imu_stream);
-    // sendCommand(client, proto_sdk.start_eeg_stream);
-    // sendCommand(client, proto_sdk.start_imu_stream);
+    sendCommand(client, proto_sdk.start_eeg_stream);
+    sendCommand(client, proto_sdk.start_imu_stream);
   });
 
   client.on("data", (data) => {
@@ -169,9 +169,17 @@ function sendCommand(client, builder) {
 
 function initChart() {
   // 初始化绘图
-  // initPlotlyChart();
-  setInterval(updateEegChart, 100); // 每 100ms 更新绘图
+  // TODO: initPlotlyChart();
+  setInterval(updateChart, 100); // 每 100ms 更新绘图
 }
+
+function updateChart() {
+  // 更新绘图
+  updateEegChart();
+  updateImuChart();
+}
+
+let startTime = Date.now(); // 记录开始时间
 
 function updateEegChart() {
   // 获取EEG数据缓冲区中的数据
@@ -179,10 +187,16 @@ function updateEegChart() {
   const clean = true; // 是否清空缓冲区
   let json = proto_sdk.get_eeg_data_buffer(fetch_num, clean);
   let eegBuff = JSON.parse(json);
-  console.log(`eegBuff, len=${eegBuff.length}`);
-  for (const row of eegBuff) {
-    const eegData = EEGData.fromData(row);
-    const channelValues = eegData.channelValues;
+  if (eegBuff.length <= 0) {
+    return;
+  }
+  let elapsedTime = (Date.now() - startTime) / 1000;
+  console.log(`elapsedTime=${elapsedTime}, eegBuff, len=${eegBuff.length}`);
+  let list = eegBuff.map((row) => EEGData.fromData(row));
+  printTimestamp(list);
+
+  for (const row of list) {
+    const channelValues = row.channelValues;
 
     // 更新每个通道的数据
     for (let i = 0; i < channelValues.length; i++) {
@@ -195,22 +209,22 @@ function updateEegChart() {
   for (let i = 0; i < eegValues.length; i++) {
     const rawData = eegValues[i];
     const data = prepareEEGData(rawData);
-    // updatePlotlyChart(i, data);
+    // TODO: updatePlotlyChart(i, data);
   }
+}
 
-  if (eegBuff.length < 6) {
-    console.log("eegBuff.lengh", eegBuff.length);
+function updateImuChart() {
+  // 获取IMU数据缓冲区中的数据
+  const fetch_num = 5000; // 每次获取的数据点数, 超过缓冲区长度时，返回缓冲区中的所有数据
+  const clean = true; // 是否清空缓冲区
+  let json = proto_sdk.get_imu_data_buffer(fetch_num, clean);
+  let imuBuff = JSON.parse(json);
+  if (imuBuff.length <= 0) {
     return;
   }
-
-  // 只打印前3及最后3条EEG数据
-  for (let i = 0; i < 3; i++) {
-    const eegData = EEGData.fromData(eegBuff[i]);
-    console.log("timestamp", eegData.timestamp);
-  }
-  console.log("...");
-  for (let i = eegBuff.length - 3; i < eegBuff.length; i++) {
-    const eegData = EEGData.fromData(eegBuff[i]);
-    console.log("timestamp", eegData.timestamp);
-  }
+  let elapsedTime = (Date.now() - startTime) / 1000;
+  console.log(`elapsedTime=${elapsedTime}, imuBuff, len=${imuBuff.length}`);
+  let list = imuBuff.map((row) => IMUData.fromData(row));
+  printTimestamp(list);
+  // TODO: updateImuPlotlyChart(list);
 }

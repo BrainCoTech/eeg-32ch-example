@@ -39,11 +39,7 @@ class IMUCord {
   }
 
   static fromJson(json_obj) {
-    return new IMUCord(
-      json_obj["cordX"],
-      json_obj["cordY"],
-      json_obj["cordZ"],
-    );
+    return new IMUCord(json_obj["cordX"], json_obj["cordY"], json_obj["cordZ"]);
   }
 
   __repr__() {
@@ -52,7 +48,20 @@ class IMUCord {
   }
 }
 
-export {
-  EEGData,
-  IMUData, 
+function printTimestamp(list) {
+  if (list.length < 6) {
+    for (const row of list) {
+      console.log("timestamp", row.timestamp);
+    }
+    return;
+  }
+  for (const row of list.slice(0, 3)) {
+    console.log("timestamp", row.timestamp);
+  }
+  console.log("...");
+  for (const row of list.slice(-3)) {
+    console.log("timestamp", row.timestamp);
+  }
 }
+
+export { EEGData, IMUData, printTimestamp };
