@@ -79,6 +79,28 @@ const CLOSURE_DTORS = (typeof FinalizationRegistry === 'undefined')
     wasm.__wbindgen_export_2.get(state.dtor)(state.a, state.b)
 });
 
+function makeClosure(arg0, arg1, dtor, f) {
+    const state = { a: arg0, b: arg1, cnt: 1, dtor };
+    const real = (...args) => {
+        // First up with a closure we increment the internal reference
+        // count. This ensures that the Rust closure environment won't
+        // be deallocated while we're invoking it.
+        state.cnt++;
+        try {
+            return f(state.a, state.b, ...args);
+        } finally {
+            if (--state.cnt === 0) {
+                wasm.__wbindgen_export_2.get(state.dtor)(state.a, state.b);
+                state.a = 0;
+                CLOSURE_DTORS.unregister(state);
+            }
+        }
+    };
+    real.original = state;
+    CLOSURE_DTORS.register(real, state, state);
+    return real;
+}
+
 function makeMutClosure(arg0, arg1, dtor, f) {
     const state = { a: arg0, b: arg1, cnt: 1, dtor };
     const real = (...args) => {
@@ -96,28 +118,6 @@ function makeMutClosure(arg0, arg1, dtor, f) {
                 CLOSURE_DTORS.unregister(state);
             } else {
                 state.a = a;
-            }
-        }
-    };
-    real.original = state;
-    CLOSURE_DTORS.register(real, state, state);
-    return real;
-}
-
-function makeClosure(arg0, arg1, dtor, f) {
-    const state = { a: arg0, b: arg1, cnt: 1, dtor };
-    const real = (...args) => {
-        // First up with a closure we increment the internal reference
-        // count. This ensures that the Rust closure environment won't
-        // be deallocated while we're invoking it.
-        state.cnt++;
-        try {
-            return f(state.a, state.b, ...args);
-        } finally {
-            if (--state.cnt === 0) {
-                wasm.__wbindgen_export_2.get(state.dtor)(state.a, state.b);
-                state.a = 0;
-                CLOSURE_DTORS.unregister(state);
             }
         }
     };
@@ -259,6 +259,100 @@ function getDataViewMemory0() {
 function isLikeNone(x) {
     return x === undefined || x === null;
 }
+
+function passArray8ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 1, 1) >>> 0;
+    getUint8ArrayMemory0().set(arg, ptr / 1);
+    WASM_VECTOR_LEN = arg.length;
+    return ptr;
+}
+
+let cachedFloat32ArrayMemory0 = null;
+
+function getFloat32ArrayMemory0() {
+    if (cachedFloat32ArrayMemory0 === null || cachedFloat32ArrayMemory0.byteLength === 0) {
+        cachedFloat32ArrayMemory0 = new Float32Array(wasm.memory.buffer);
+    }
+    return cachedFloat32ArrayMemory0;
+}
+
+function getArrayF32FromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    return getFloat32ArrayMemory0().subarray(ptr / 4, ptr / 4 + len);
+}
+/**
+ * @param {Uint8Array} data
+ * @param {number} gain
+ * @returns {Float32Array}
+ */
+module.exports.parse_eeg_data = function(data, gain) {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        const ptr0 = passArray8ToWasm0(data, wasm.__wbindgen_export_3);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.parse_eeg_data(retptr, ptr0, len0, gain);
+        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+        var v2 = getArrayF32FromWasm0(r0, r1).slice();
+        wasm.__wbindgen_export_1(r0, r1 * 4, 4);
+        return v2;
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+    }
+};
+
+let stack_pointer = 128;
+
+function addBorrowedObject(obj) {
+    if (stack_pointer == 1) throw new Error('out of js stack');
+    heap[--stack_pointer] = obj;
+    return stack_pointer;
+}
+/**
+ * @param {Function} cb
+ */
+module.exports.set_web_callback = function(cb) {
+    try {
+        wasm.set_web_callback(addBorrowedObject(cb));
+    } finally {
+        heap[stack_pointer++] = undefined;
+    }
+};
+
+/**
+ * @param {number} eeg_buffer_len
+ */
+module.exports.set_eeg_buffer_cfg = function(eeg_buffer_len) {
+    wasm.set_eeg_buffer_cfg(eeg_buffer_len);
+};
+
+/**
+ * @param {number} imu_buffer_len
+ */
+module.exports.set_imu_buffer_cfg = function(imu_buffer_len) {
+    wasm.set_imu_buffer_cfg(imu_buffer_len);
+};
+
+module.exports.clear_eeg_buffer = function() {
+    wasm.clear_eeg_buffer();
+};
+
+module.exports.clear_imu_buffer = function() {
+    wasm.clear_imu_buffer();
+};
+
+function _assertClass(instance, klass) {
+    if (!(instance instanceof klass)) {
+        throw new Error(`expected instance of ${klass.name}`);
+    }
+}
+
+function passArray16ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 2, 2) >>> 0;
+    getUint16ArrayMemory0().set(arg, ptr / 2);
+    WASM_VECTOR_LEN = arg.length;
+    return ptr;
+}
 /**
  * @param {string} level
  */
@@ -268,12 +362,6 @@ module.exports.init_logging = function(level) {
     wasm.init_logging(ptr0, len0);
 };
 
-function passArray8ToWasm0(arg, malloc) {
-    const ptr = malloc(arg.length * 1, 1) >>> 0;
-    getUint8ArrayMemory0().set(arg, ptr / 1);
-    WASM_VECTOR_LEN = arg.length;
-    return ptr;
-}
 /**
  * @returns {any}
  */
@@ -378,25 +466,11 @@ module.exports.set_env_noise_filter_cfg = function(noise_type, fs) {
     wasm.set_env_noise_filter_cfg(noise_type, fs);
 };
 
-let cachedFloat32ArrayMemory0 = null;
-
-function getFloat32ArrayMemory0() {
-    if (cachedFloat32ArrayMemory0 === null || cachedFloat32ArrayMemory0.byteLength === 0) {
-        cachedFloat32ArrayMemory0 = new Float32Array(wasm.memory.buffer);
-    }
-    return cachedFloat32ArrayMemory0;
-}
-
 function passArrayF32ToWasm0(arg, malloc) {
     const ptr = malloc(arg.length * 4, 4) >>> 0;
     getFloat32ArrayMemory0().set(arg, ptr / 4);
     WASM_VECTOR_LEN = arg.length;
     return ptr;
-}
-
-function getArrayF32FromWasm0(ptr, len) {
-    ptr = ptr >>> 0;
-    return getFloat32ArrayMemory0().subarray(ptr / 4, ptr / 4 + len);
 }
 /**
  * @param {Float32Array} data
@@ -556,58 +630,83 @@ module.exports.set_resp_callback = function(callback) {
     wasm.set_resp_callback(addHeapObject(callback));
 };
 
-/**
- * @param {number} eeg_buffer_len
- */
-module.exports.set_eeg_buffer_cfg = function(eeg_buffer_len) {
-    wasm.set_eeg_buffer_cfg(eeg_buffer_len);
-};
+let cachedFloat64ArrayMemory0 = null;
 
-/**
- * @param {number} imu_buffer_len
- */
-module.exports.set_imu_buffer_cfg = function(imu_buffer_len) {
-    wasm.set_imu_buffer_cfg(imu_buffer_len);
-};
+function getFloat64ArrayMemory0() {
+    if (cachedFloat64ArrayMemory0 === null || cachedFloat64ArrayMemory0.byteLength === 0) {
+        cachedFloat64ArrayMemory0 = new Float64Array(wasm.memory.buffer);
+    }
+    return cachedFloat64ArrayMemory0;
+}
 
-module.exports.clear_eeg_buffer = function() {
-    wasm.clear_eeg_buffer();
-};
-
-module.exports.clear_imu_buffer = function() {
-    wasm.clear_imu_buffer();
-};
-
-let stack_pointer = 128;
-
-function addBorrowedObject(obj) {
-    if (stack_pointer == 1) throw new Error('out of js stack');
-    heap[--stack_pointer] = obj;
-    return stack_pointer;
+function getArrayF64FromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    return getFloat64ArrayMemory0().subarray(ptr / 8, ptr / 8 + len);
 }
 /**
- * @param {Function} cb
+ * @param {number} n
+ * @param {number} d
+ * @returns {Float64Array}
  */
-module.exports.set_web_callback = function(cb) {
+module.exports.fftfreq = function(n, d) {
     try {
-        wasm.set_web_callback(addBorrowedObject(cb));
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        wasm.fftfreq(retptr, n, d);
+        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+        var v1 = getArrayF64FromWasm0(r0, r1).slice();
+        wasm.__wbindgen_export_1(r0, r1 * 8, 8);
+        return v1;
     } finally {
-        heap[stack_pointer++] = undefined;
+        wasm.__wbindgen_add_to_stack_pointer(16);
     }
 };
 
-function _assertClass(instance, klass) {
-    if (!(instance instanceof klass)) {
-        throw new Error(`expected instance of ${klass.name}`);
+/**
+ * @param {number} n
+ * @param {number} fs
+ * @returns {Float64Array}
+ */
+module.exports.get_filtered_freq = function(n, fs) {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        wasm.get_filtered_freq(retptr, n, fs);
+        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+        var v1 = getArrayF64FromWasm0(r0, r1).slice();
+        wasm.__wbindgen_export_1(r0, r1 * 8, 8);
+        return v1;
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
     }
-}
+};
 
-function passArray16ToWasm0(arg, malloc) {
-    const ptr = malloc(arg.length * 2, 2) >>> 0;
-    getUint16ArrayMemory0().set(arg, ptr / 2);
+function passArrayF64ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 8, 8) >>> 0;
+    getFloat64ArrayMemory0().set(arg, ptr / 8);
     WASM_VECTOR_LEN = arg.length;
     return ptr;
 }
+/**
+ * @param {Float64Array} data
+ * @param {number} fs
+ * @returns {Float64Array}
+ */
+module.exports.get_filtered_fft = function(data, fs) {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        const ptr0 = passArrayF64ToWasm0(data, wasm.__wbindgen_export_3);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.get_filtered_fft(retptr, ptr0, len0, fs);
+        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+        var v2 = getArrayF64FromWasm0(r0, r1).slice();
+        wasm.__wbindgen_export_1(r0, r1 * 8, 8);
+        return v2;
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+    }
+};
 
 function getArrayU8FromWasm0(ptr, len) {
     ptr = ptr >>> 0;
@@ -661,27 +760,6 @@ function getArrayI16FromWasm0(ptr, len) {
     ptr = ptr >>> 0;
     return getInt16ArrayMemory0().subarray(ptr / 2, ptr / 2 + len);
 }
-/**
- * @param {Uint8Array} data
- * @param {number} gain
- * @returns {Float32Array}
- */
-module.exports.parse_eeg_data = function(data, gain) {
-    try {
-        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        const ptr0 = passArray8ToWasm0(data, wasm.__wbindgen_export_3);
-        const len0 = WASM_VECTOR_LEN;
-        wasm.parse_eeg_data(retptr, ptr0, len0, gain);
-        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
-        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-        var v2 = getArrayF32FromWasm0(r0, r1).slice();
-        wasm.__wbindgen_export_1(r0, r1 * 4, 4);
-        return v2;
-    } finally {
-        wasm.__wbindgen_add_to_stack_pointer(16);
-    }
-};
-
 function __wbg_adapter_40(arg0, arg1) {
     wasm.__wbindgen_export_5(arg0, arg1);
 }
@@ -690,7 +768,7 @@ function __wbg_adapter_43(arg0, arg1, arg2) {
     wasm.__wbindgen_export_6(arg0, arg1, addHeapObject(arg2));
 }
 
-function __wbg_adapter_305(arg0, arg1, arg2, arg3) {
+function __wbg_adapter_308(arg0, arg1, arg2, arg3) {
     wasm.__wbindgen_export_7(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
 }
 
@@ -3211,7 +3289,7 @@ module.exports.__wbg_new_1e8ca58d170d6ad0 = function(arg0, arg1) {
             const a = state0.a;
             state0.a = 0;
             try {
-                return __wbg_adapter_305(a, state0.b, arg0, arg1);
+                return __wbg_adapter_308(a, state0.b, arg0, arg1);
             } finally {
                 state0.a = a;
             }
@@ -3331,13 +3409,13 @@ module.exports.__wbindgen_cb_drop = function(arg0) {
     return ret;
 };
 
-module.exports.__wbindgen_closure_wrapper2264 = function(arg0, arg1, arg2) {
-    const ret = makeMutClosure(arg0, arg1, 810, __wbg_adapter_43);
+module.exports.__wbindgen_closure_wrapper1070 = function(arg0, arg1, arg2) {
+    const ret = makeClosure(arg0, arg1, 442, __wbg_adapter_40);
     return addHeapObject(ret);
 };
 
-module.exports.__wbindgen_closure_wrapper707 = function(arg0, arg1, arg2) {
-    const ret = makeClosure(arg0, arg1, 395, __wbg_adapter_40);
+module.exports.__wbindgen_closure_wrapper2503 = function(arg0, arg1, arg2) {
+    const ret = makeMutClosure(arg0, arg1, 963, __wbg_adapter_43);
     return addHeapObject(ret);
 };
 

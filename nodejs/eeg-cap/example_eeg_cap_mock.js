@@ -19,7 +19,7 @@ const __dirname = path.dirname(__filename);
 // EEG数据
 const fs = 250; // 采样频率
 const num_channels = 32; // 通道数
-const eeg_buffer_length = 10000; // 默认缓冲区长度, 1000个数据点，每个数据点有32个通道，每个通道的值类型为float32，即4字节，大约占用128KB内存, 1000 * 32 * 4 = 128000 bytes
+const eeg_buffer_length = 1000; // 默认缓冲区长度, 1000个数据点，每个数据点有32个通道，每个通道的值类型为float32，即4字节，大约占用128KB内存, 1000 * 32 * 4 = 128000 bytes
 let eeg_seq_num = 0; // EEG数据包序号
 let eegValues = Array.from({ length: num_channels }, () =>
   Array(eeg_buffer_length).fill(0)
@@ -31,7 +31,7 @@ const lowCut = 2; // 低通滤波截止频率
 const highCut = 45; // 高通滤波截止频率
 
 // IMU数据
-const imu_buffer_length = 10000; // 默认缓冲区长度, 1000个数据点
+const imu_buffer_length = 1000; // 默认缓冲区长度, 1000个数据点
 
 function initCfg() {
   console.log("initCfg");
@@ -46,7 +46,7 @@ function initCfg() {
 
 function updateEegChart() {
   // 获取EEG数据缓冲区中的数据
-  const fetch_num = 5000; // 每次获取的数据点数, 超过缓冲区长度时，返回缓冲区中的所有数据
+  const fetch_num = 1250; // 每次获取的数据点数, 超过缓冲区长度时，返回缓冲区中的所有数据
   const clean = true; // 是否清空缓冲区
   let json = proto_sdk.get_eeg_data_buffer(fetch_num, clean);
   let eegBuff = JSON.parse(json);
@@ -68,9 +68,23 @@ function updateEegChart() {
 
   // 绘制更新后的数据
   for (let i = 0; i < eegValues.length; i++) {
-    const rawData = eegValues[i];
-    const data = prepareEEGData(rawData);
-    // updatePlotlyChart(i, data);
+    const rawData = eegValues[i]; // 连续的时域数据
+    const filterData = prepareEEGData(rawData);
+    if (i == 0) {
+      console.log(`data len=${rawData.length}`);
+      console.log(`rawData=${rawData.slice(0, 10)}`);
+      console.log(`filterData=${filterData.slice(0, 10)}`);
+    }
+    const n = rawData.length;
+    const fftFreq = proto_sdk.get_filtered_freq(n, fs);
+    const fftData = proto_sdk.get_filtered_fft(rawData, fs); // 原始EEG数据fft
+    const fftData2 = proto_sdk.get_filtered_fft(filterData, fs); // 滤波后的EEG数据fft
+    if (i == 0) {
+      console.log(`fftFreq=${fftFreq.slice(0, 10)}`);
+      console.log(`fftData=${fftData.slice(0, 10)}`);
+      console.log(`fftData2=${fftData2.slice(0, 10)}`);
+    }
+    // TODO: 绘制图表
   }
 }
 
