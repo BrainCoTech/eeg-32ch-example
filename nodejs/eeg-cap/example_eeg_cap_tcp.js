@@ -205,11 +205,17 @@ function updateEegChart() {
     }
   }
 
-  // 绘制更新后的数据
+  // TODO: 根据需要绘制EEG时域信号图表和FFT图表
   for (let i = 0; i < eegValues.length; i++) {
-    const rawData = eegValues[i];
-    const data = prepareEEGData(rawData);
-    // TODO: updatePlotlyChart(i, data);
+    // TODO: 绘制EEG时域信号图表
+    const rawData = eegValues[i]; // 连续的时域数据
+    const filterData = prepareEEGData(rawData);
+
+    // TODO: 绘制FFT图表
+    const n = rawData.length;
+    const fftFreq = proto_sdk.get_filtered_freq(n, fs);
+    const fftData = proto_sdk.get_filtered_fft(rawData, fs); // 原始EEG数据fft
+    const fftData2 = proto_sdk.get_filtered_fft(filterData, fs); // 滤波后的EEG数据fft
   }
 }
 

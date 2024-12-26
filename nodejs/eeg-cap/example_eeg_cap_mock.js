@@ -76,7 +76,7 @@ function updateEegChart() {
       console.log(`filterData=${filterData.slice(0, 10)}`);
     }
     const n = rawData.length;
-    const fftFreq = proto_sdk.get_filtered_freq(n, fs);
+    const fftFreq = proto_sdk.get_filtered_freq(n, fs); // 频率轴
     const fftData = proto_sdk.get_filtered_fft(rawData, fs); // 原始EEG数据fft
     const fftData2 = proto_sdk.get_filtered_fft(filterData, fs); // 滤波后的EEG数据fft
     if (i == 0) {
