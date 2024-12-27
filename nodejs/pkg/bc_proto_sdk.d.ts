@@ -2,11 +2,13 @@
 /* eslint-disable */
 export function parse_eeg_data(data: Uint8Array, gain: number): Float32Array;
 export function set_web_callback(cb: Function): void;
+export function fftfreq(n: number, d: number): Float64Array;
+export function get_filtered_freq(n: number, fs: number): Float64Array;
+export function get_filtered_fft(data: Float64Array, fs: number): Float64Array;
 export function set_eeg_buffer_cfg(eeg_buffer_len: number): void;
 export function set_imu_buffer_cfg(imu_buffer_len: number): void;
 export function clear_eeg_buffer(): void;
 export function clear_imu_buffer(): void;
-export function init_logging(level: string): void;
 export function get_device_info(): any;
 export function start_eeg_stream(): any;
 export function stop_eeg_stream(): any;
@@ -18,6 +20,14 @@ export function start_imu_stream(): any;
 export function stop_imu_stream(): any;
 export function get_imu_config(): any;
 export function set_imu_config(sr: ImuSampleRate): any;
+export function get_ble_config(): any;
+export function set_ble_config(model: string, sn: string): any;
+export function get_wifi_status(): any;
+export function get_wifi_config(): any;
+export function set_wifi_config(bandwidth_40mhz: boolean, security: WiFiSecurity, ssid: string, password: string): any;
+export function send_start_dfu(file_size: number, file_md5: string, file_sha256: string): any;
+export function send_dfu_data(offset: number, data: Uint8Array, finished: boolean): any;
+export function send_dfu_reboot(): any;
 export function set_env_noise_filter_cfg(noise_type: NoiseTypes, fs: number): void;
 export function remove_env_noise(data: Float32Array): Float32Array;
 export function set_eeg_filter_cfg(high_pass_enabled: boolean, high_cut: number, low_pass_enabled: boolean, low_cut: number, band_pass_enabled: boolean, band_pass_low: number, band_pass_high: number, band_stop_enabled: boolean, band_stop_low: number, band_stop_high: number, fs: number): void;
@@ -27,9 +37,7 @@ export function apply_lowpass_filter(data: Float32Array, order: number, low_cut:
 export function apply_bandpass_filter(data: Float32Array, order: number, low_cut: number, high_cut: number, fs: number): Float32Array;
 export function apply_bandstop_filter(data: Float32Array, order: number, low_cut: number, high_cut: number, fs: number): Float32Array;
 export function set_resp_callback(callback: Function): void;
-export function fftfreq(n: number, d: number): Float64Array;
-export function get_filtered_freq(n: number, fs: number): Float64Array;
-export function get_filtered_fft(data: Float64Array, fs: number): Float64Array;
+export function init_logging(level: string): void;
 export enum ActionCmd {
   SetStart = 1,
   SetFinish = 2,
@@ -323,14 +331,7 @@ export enum StarkModuleId {
 export enum WiFiSecurity {
   SECURITY_NONE = 0,
   SECURITY_OPEN = 1,
-  SECURITY_WPA2_AES_PSK = 2,
-  SECURITY_WPA2_TKIP_PSK = 3,
-  SECURITY_WPA2_MIXED_PSK = 4,
-  SECURITY_WPA_WPA2_TKIP_PSK = 5,
-  SECURITY_WPA_WPA2_AES_PSK = 6,
-  SECURITY_WPA_WPA2_MIXED_PSK = 7,
-  SECURITY_WPA3_AES_PSK = 8,
-  SECURITY_WPA2_WPA3_MIXED = 9,
+  SECURITY_WPA2_MIXED_PSK = 2,
 }
 export class ActionSequence {
   free(): void;

@@ -86,10 +86,9 @@ async def scan_and_connect(loop):
 
     # fmt: off
     # 配置EEG/IMU
-    # await client.set_eeg_config(EegSampleRate.SR_250Hz, EegSignalGain.GAIN_6, EegSignalSource.NORMAL)
-    # await client.set_eeg_config(EegSampleRate.SR_500Hz, EegSignalGain.GAIN_1, EegSignalSource.NORMAL)
-    # await client.set_imu_config(ImuSampleRate.SR_50Hz)
-    # await client.set_imu_config(ImuSampleRate.SR_100Hz)
+    # await client.set_eeg_config(eeg_cap.EegSampleRate.SR_2000Hz, eeg_cap.EegSignalGain.GAIN_6, eeg_cap.EegSignalSource.NORMAL)
+    # await client.set_imu_config(eeg_cap.ImuSampleRate.SR_50Hz)
+    # await client.set_imu_config(eeg_cap.ImuSampleRate.SR_100Hz)
 
     # 开始/停止EEG/IMU数据流
     # await client.stop_eeg_stream()

@@ -2,9 +2,13 @@ import asyncio
 import logging
 import binascii
 
-from eeg_cap_model import get_addr_port
+from eeg_cap_model import get_addr_port, eeg_cap
 from logger import getLogger
-from bc_proto_sdk import MessageParser, MsgType, PyTcpClient
+from bc_proto_sdk import (
+    MessageParser,
+    MsgType,
+    PyTcpClient,
+)  # , EegSampleRate, EegSignalGain, EegSignalSource
 
 # logger = getLogger(logging.DEBUG)
 logger = getLogger(logging.INFO)
@@ -37,9 +41,13 @@ async def scan_and_connect():
     # await client.stop_eeg_stream()
     # await client.stop_imu_stream()
 
-    await client.get_device_info()
-    await client.get_eeg_config()
-    await client.get_imu_config()
+    # await client.get_device_info()
+    # await client.get_eeg_config()
+    # await client.get_imu_config()
+
+    # await client.set_eeg_config(eeg_cap.EegSampleRate.SR_2000Hz, eeg_cap.EegSignalGain.GAIN_6, eeg_cap.EegSignalSource.NORMAL)
+    # await client.set_imu_config(eeg_cap.ImuSampleRate.SR_50Hz)
+    # await client.set_imu_config(eeg_cap.ImuSampleRate.SR_100Hz)
 
     await client.start_eeg_stream()
     # await client.start_imu_stream()

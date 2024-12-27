@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import numpy as np
-import matplotlib.pyplot as plt
 import pyqtgraph as pg
 from pyqtgraph.Qt.QtWidgets import QApplication
 from qasync import QEventLoop

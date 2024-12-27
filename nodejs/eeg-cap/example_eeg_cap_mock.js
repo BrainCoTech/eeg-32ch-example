@@ -1,7 +1,7 @@
 import {
   proto_sdk,
-  initMsgParser,
-  receiveData,
+  initTcpMsgParser,
+  receiveTcpData,
   prepareEEGData,
   NoiseTypes,
 } from "./example_eeg_cap.js";
@@ -130,7 +130,7 @@ function mock_recv_data() {
     ],
   ];
   for (const msg of msgs) {
-    receiveData(msg);
+    receiveTcpData(msg);
   }
   // return;
 
@@ -143,7 +143,7 @@ function mock_recv_data() {
   console.log(`lines, len=${lines.length}`);
   for (const line of lines) {
     const data = line.split(", ");
-    receiveData(data);
+    receiveTcpData(data);
   }
 
   // read from file, eeg_cap_sample_imu.log
@@ -155,11 +155,11 @@ function mock_recv_data() {
   console.log(`lines2, len=${lines2.length}`);
   for (const line of lines2) {
     const data = line.split(", ");
-    receiveData(data);
+    receiveTcpData(data);
   }
 }
 
-await initMsgParser();
+await initTcpMsgParser();
 initCfg();
 mock_recv_data();
 await setTimeout(() => {

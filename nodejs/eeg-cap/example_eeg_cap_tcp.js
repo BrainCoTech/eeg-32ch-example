@@ -2,8 +2,8 @@ import mdns from "mdns";
 import net from "net";
 import {
   proto_sdk,
-  initMsgParser,
-  receiveData,
+  initTcpMsgParser,
+  receiveTcpData,
   prepareEEGData,
   NoiseTypes,
   EegSampleRate,
@@ -37,7 +37,7 @@ function initCfg() {
   });
 }
 
-await initMsgParser();
+await initTcpMsgParser();
 initCfg();
 initChart();
 
@@ -108,7 +108,7 @@ function scan_service() {
 async function connectToService(address, port) {
   client.connect(port, address, () => {
     console.log(`Connected to ${address}:${port}`);
-    // await initMsgParser();
+    // await initTcpMsgParser();
 
     // 读取设备信息
     // sendCommand(client, proto_sdk.get_device_info);
@@ -146,7 +146,7 @@ async function connectToService(address, port) {
     // print data, e.g. 0x01, 0x02, 0x03
     // const hex = data.toString("hex").match(/.{2}/g).join(", 0x");
     // console.debug("Received data:", `0x${hex}`);
-    receiveData(data);
+    receiveTcpData(data);
   });
 
   client.on("close", () => {

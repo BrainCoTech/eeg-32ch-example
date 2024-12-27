@@ -1,5 +1,6 @@
 let proto_sdk = null;
-let message_parser = null;
+let tcp_message_parser = null;
+let ble_message_parser = null;
 let default_eeg_filter_enabled = true;
 
 let EegSampleRate;
@@ -72,22 +73,40 @@ function set_eeg_filter_cfg(cfg) {
   );
 }
 
-async function initMsgParser() {
+async function initTcpMsgParser() {
   await initSDK();
 
-  if (message_parser) return;
-  console.debug("initMsgParser");
-  message_parser = new proto_sdk.MessageParser(
-    "eeg-cap-device",
+  if (tcp_message_parser) return;
+  console.debug("initTcpMsgParser");
+  tcp_message_parser = new proto_sdk.MessageParser(
+    "ecap-tcp",
     proto_sdk.MsgType.EEGCap
   );
-  await message_parser.start_message_stream();
+  await tcp_message_parser.start_message_stream();
 }
 
-// 处理接收到的数据
-function receiveData(data) {
+async function initBleMsgParser() {
+  await initSDK();
+
+  if (ble_message_parser) return;
+  console.debug("initBleMsgParser");
+  ble_message_parser = new proto_sdk.MessageParser(
+    "ecap-ble",
+    proto_sdk.MsgType.EEGCap
+  );
+  await ble_message_parser.start_message_stream();
+}
+
+// 处理接收到的TCP数据
+function receiveTcpData(data) {
   const uint8Array = new Uint8Array(data);
-  message_parser.receive_data(uint8Array);
+  tcp_message_parser.receive_data(uint8Array);
+}
+
+// 处理接收到的BLE数据
+function receiveBleData(data) {
+  const uint8Array = new Uint8Array(data);
+  ble_message_parser.receive_data(uint8Array);
 }
 
 // EEG数据滤波处理, channel_data为某个通道的数据
@@ -116,8 +135,10 @@ function prepareEEGData(channel_data) {
 export {
   proto_sdk,
   initSDK,
-  initMsgParser,
-  receiveData,
+  initTcpMsgParser,
+  initBleMsgParser,
+  receiveTcpData,
+  receiveBleData,
   prepareEEGData,
   EegSampleRate,
   EegSignalGain,
