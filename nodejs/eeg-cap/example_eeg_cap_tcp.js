@@ -125,13 +125,17 @@ async function connectToService(address, port) {
     //     EegSignalSource.NORMAL
     //   )
     // );
-    // sendCommand(client, () =>
-    //   proto_sdk.set_eeg_config(
-    //     EegSampleRate.SR_500Hz,
-    //     EegSignalGain.GAIN_1,
-    //     EegSignalSource.TEST_SIGNAL
-    //   )
-    // );
+
+    // 250Hz，增益为1倍，测试信号
+    sendCommand(client, () =>
+      proto_sdk.set_eeg_config(
+        EegSampleRate.SR_500Hz,
+        EegSignalGain.GAIN_1,
+        EegSignalSource.TEST_SIGNAL
+      )
+    );
+    sendCommand(client, proto_sdk.get_eeg_config); // 读取配置, 计算EEG电压值需要配置信息
+
     // sendCommand(client, () => proto_sdk.set_imu_config(ImuSampleRate.SR_50Hz));
     // sendCommand(client, () => proto_sdk.set_imu_config(ImuSampleRate.SR_100Hz));
 
@@ -209,7 +213,9 @@ function updateEegChart() {
   for (let i = 0; i < eegValues.length; i++) {
     // TODO: 绘制EEG时域信号图表
     const rawData = eegValues[i]; // 连续的时域数据
+    if (i == 0) console.log(`rawData, ${rawData.slice(rawData.length - 10)}`);
     const filterData = prepareEEGData(rawData);
+    if (i == 0) console.log(`filterData, ${filterData.slice(filterData.length - 10)}`);
 
     // TODO: 绘制FFT图表
     const n = rawData.length;
