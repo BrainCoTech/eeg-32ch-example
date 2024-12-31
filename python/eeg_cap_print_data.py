@@ -80,9 +80,10 @@ def print_eeg_data():
         data = perform_bandpass(data, order, low_cut, high_cut, fs)
         # 打印通道1数据
         # if i == 0:
-            # logger.debug(f"raw_data: {raw_data}")
-            # logger.debug(f"data: {data}")
-            # logger.info(f"data len: {len(data)}")
+        # logger.debug(f"raw_data: {raw_data}")
+        # logger.debug(f"data: {data}")
+        # logger.info(f"data len: {len(data)}")
+
 
 def print_eeg_timestamps(data):
     if len(data) <= 6:
@@ -95,6 +96,7 @@ def print_eeg_timestamps(data):
     logger.info("...")
     for item in data[-3:]:
         logger.info(f"{item}")
+
 
 async def scan_and_connect():
     (addr, port) = await get_addr_port()
@@ -109,16 +111,26 @@ async def scan_and_connect():
     # 连接设备
     await client.connect(parser)
 
+    # 获取EEG配置
+    msgId = await client.get_eeg_config()
+    logger.warning(f"msgId: {msgId}")
+
     # 开始EEG数据流
-    await client.start_eeg_stream()
+    msgId = await client.start_eeg_stream()
+    logger.warning(f"msgId: {msgId}")
+
     # 开始IMU数据流
-    await client.start_imu_stream()
+    msgId = await client.start_imu_stream()
+    logger.warning(f"msgId: {msgId}")
 
 
 def init_cfg():
     logger.info("Init cfg")
     set_env_noise_filter_cfg(NoiseTypes.FIFTY, fs)  # 滤波器参数设置，去除50Hz电流干扰
     set_eeg_buffer_length(eeg_buffer_length)  # 设置EEG数据缓冲区长度
+    eeg_cap.set_msg_resp_callback(
+        lambda msg: logger.warning(f"Message response: {msg}")
+    )
 
 
 async def main():
