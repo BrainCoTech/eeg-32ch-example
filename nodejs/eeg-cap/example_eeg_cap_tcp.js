@@ -47,8 +47,8 @@ const client = new net.Socket();
 // 如果已知IP地址和端口，可以直接指定
 // scan_service();
 // let addr = "192.168.3.7"; // hailong-dev
-// let addr = "192.168.3.12"; // yongle-dev
-let addr = "192.168.3.23"; // xiangao-dev
+// let addr = "192.168.3.12"; // xiangao-dev
+let addr = "192.168.3.23"; // yongle-dev
 let port = 53129;
 connectToService(addr, port);
 
@@ -104,46 +104,97 @@ function scan_service() {
   browser.start();
 }
 
+function start_leadoff_check(client) {
+  let chips = [
+    proto_sdk.LeadOffChip.Chip1,
+    proto_sdk.LeadOffChip.Chip2,
+    proto_sdk.LeadOffChip.Chip3,
+    proto_sdk.LeadOffChip.Chip4,
+  ];
+
+  // Cur6nA = 1,
+  // Cur24nA = 2,
+  // Cur6uA = 3,
+  // Cur24uA = 4
+  let current = proto_sdk.LeadOffCurrent.Cur6nA; // 默认使用6nA
+
+  // let freq = proto_sdk.LeadOffFreq.Ac7p8hz; // AC 7.8 Hz
+  let freq = proto_sdk.LeadOffFreq.Ac31p2hz; // AC 31.2 Hz，收到250个数据点约需要1300ms
+
+  proto_sdk.start_leadoff_check(); // reset leadoff cache
+
+  // 芯片1~4轮询，每个芯片包含8个通道
+  const chip_num = 4;
+  for (let i = 0; i < chip_num + 1; i++) {
+    setTimeout(() => {
+      // stop_leadoff_stream, 目前固件设计等同于stop_eeg_stream
+      sendCommand(client, proto_sdk.stop_eeg_stream);
+
+      if (i < chip_num) {
+        sendCommand(client, () =>
+          proto_sdk.set_leadoff_config(chips[i], freq, current)
+        );
+        // start_leadoff_stream, 目前固件设计等同于start_eeg_stream
+        sendCommand(client, proto_sdk.start_eeg_stream); // 开启连续EEG数据流通知, 之后收到的数据仅用于计算阻抗
+      } else {
+        // 至少轮询过一轮chip1~4，才能获取计算得到32个通道的阻抗值
+        // 32个通道的阻抗值，初始值为0，调用compute_impedance_values会计算并填充最新的数据
+        let impedance_values = proto_sdk.compute_impedance_values(current); // Unit: kΩ
+        console.log("impedance_values", impedance_values);
+      }
+    }, 1500 * i); // 间隔一段时间切换到下个芯片
+  }
+}
+
+function start_eeg_stream(client) {
+  // 配置EEG为正常佩戴信号
+  // sendCommand(client, () =>
+  //   proto_sdk.set_eeg_config(
+  //     EegSampleRate.SR_250Hz,
+  //     EegSignalGain.GAIN_6,
+  //     EegSignalSource.NORMAL
+  //   )
+  // );
+
+  // 250Hz，增益为1倍，测试信号，循环 1Hz 方波
+  sendCommand(client, () =>
+    proto_sdk.set_eeg_config(
+      EegSampleRate.SR_250Hz,
+      EegSignalGain.GAIN_1,
+      EegSignalSource.TEST_SIGNAL
+    )
+  );
+  sendCommand(client, proto_sdk.get_eeg_config); // 读取EEG配置, 计算EEG电压值用到配置信息, gain
+  sendCommand(client, proto_sdk.start_eeg_stream); // 开启连续EEG数据流通知
+}
+
+function start_imu_stream(client) {
+  // 设置IMU采样率
+  sendCommand(client, () => proto_sdk.set_imu_config(ImuSampleRate.SR_50Hz));
+  // sendCommand(client, () => proto_sdk.set_imu_config(ImuSampleRate.SR_100Hz));
+  // 读取配置
+  sendCommand(client, proto_sdk.get_imu_config);
+  sendCommand(client, proto_sdk.start_imu_stream); // 开启连续IMU数据流通知
+}
+
 // 连接到发现的服务
 async function connectToService(address, port) {
   client.connect(port, address, () => {
     console.log(`Connected to ${address}:${port}`);
-    // await initTcpMsgParser();
+    /// 注意，连续发送多条命令时(4条以上？)，固件resp不正确，先绕过，等固件修复
 
     // 读取设备信息
     // sendCommand(client, proto_sdk.get_device_info);
 
-    // 读取配置
-    // sendCommand(client, proto_sdk.get_eeg_config);
-    // sendCommand(client, proto_sdk.get_imu_config);
-
-    // 配置EEG/IMU
-    // sendCommand(client, () =>
-    //   proto_sdk.set_eeg_config(
-    //     EegSampleRate.SR_250Hz,
-    //     EegSignalGain.GAIN_6,
-    //     EegSignalSource.NORMAL
-    //   )
-    // );
-
-    // 250Hz，增益为1倍，测试信号
-    sendCommand(client, () =>
-      proto_sdk.set_eeg_config(
-        EegSampleRate.SR_500Hz,
-        EegSignalGain.GAIN_1,
-        EegSignalSource.TEST_SIGNAL
-      )
-    );
-    sendCommand(client, proto_sdk.get_eeg_config); // 读取配置, 计算EEG电压值需要配置信息
-
-    // sendCommand(client, () => proto_sdk.set_imu_config(ImuSampleRate.SR_50Hz));
-    // sendCommand(client, () => proto_sdk.set_imu_config(ImuSampleRate.SR_100Hz));
-
     // 开始/停止EEG/IMU数据流
     // sendCommand(client, proto_sdk.stop_eeg_stream);
     // sendCommand(client, proto_sdk.stop_imu_stream);
-    sendCommand(client, proto_sdk.start_eeg_stream);
-    sendCommand(client, proto_sdk.start_imu_stream);
+
+    // 开启阻抗检测模式，与正常EEG模式互斥
+    start_leadoff_check(client);
+
+    // start_eeg_stream(client);
+    // start_imu_stream(client);
   });
 
   client.on("data", (data) => {
@@ -215,7 +266,8 @@ function updateEegChart() {
     const rawData = eegValues[i]; // 连续的时域数据
     if (i == 0) console.log(`rawData, ${rawData.slice(rawData.length - 10)}`);
     const filterData = prepareEEGData(rawData);
-    if (i == 0) console.log(`filterData, ${filterData.slice(filterData.length - 10)}`);
+    if (i == 0)
+      console.log(`filterData, ${filterData.slice(filterData.length - 10)}`);
 
     // TODO: 绘制FFT图表
     const n = rawData.length;

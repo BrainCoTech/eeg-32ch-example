@@ -35,6 +35,12 @@ const imu_buffer_length = 1000; // 默认缓冲区长度, 1000个数据点
 
 function initCfg() {
   console.log("initCfg");
+  console.log(
+    "proto_sdk",
+    proto_sdk.set_env_noise_filter_cfg,
+    NoiseTypes.FIFTY,
+    fs
+  );
   // 滤波器参数设置，去除50Hz电流干扰
   proto_sdk.set_env_noise_filter_cfg(NoiseTypes.FIFTY, fs); // 设置环境噪声滤波器，50Hz 电源干扰
   proto_sdk.set_eeg_buffer_cfg(eeg_buffer_length); // 设置EEG数据缓冲区长度
