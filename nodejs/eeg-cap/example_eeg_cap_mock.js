@@ -20,7 +20,6 @@ const __dirname = path.dirname(__filename);
 const fs = 250; // 采样频率
 const num_channels = 32; // 通道数
 const eeg_buffer_length = 1000; // 默认缓冲区长度, 1000个数据点，每个数据点有32个通道，每个通道的值类型为float32，即4字节，大约占用128KB内存, 1000 * 32 * 4 = 128000 bytes
-let eeg_seq_num = 0; // EEG数据包序号
 let eegValues = Array.from({ length: num_channels }, () =>
   Array(eeg_buffer_length).fill(0)
 );

@@ -18,7 +18,6 @@ import { EEGData, IMUData, printTimestamp } from "./example_eeg_cap_model.js";
 const fs = 250; // 采样频率
 const num_channels = 32; // 通道数
 const eeg_buffer_length = 1000; // 默认缓冲区长度, 1000个数据点，每个数据点有32个通道，每个通道的值类型为float32，即4字节，大约占用128KB内存, 1000 * 32 * 4 = 128000 bytes
-// let eeg_seq_num = 0; // EEG数据包序号
 let eegValues = Array.from({ length: num_channels }, () =>
   Array(eeg_buffer_length).fill(0)
 );
@@ -105,45 +104,30 @@ function scan_service() {
 }
 
 function start_leadoff_check(client) {
-  let chips = [
-    proto_sdk.LeadOffChip.Chip1,
-    proto_sdk.LeadOffChip.Chip2,
-    proto_sdk.LeadOffChip.Chip3,
-    proto_sdk.LeadOffChip.Chip4,
-  ];
-
-  // Cur6nA = 1,
-  // Cur24nA = 2,
-  // Cur6uA = 3,
-  // Cur24uA = 4
   let current = proto_sdk.LeadOffCurrent.Cur6nA; // 默认使用6nA
-
-  // let freq = proto_sdk.LeadOffFreq.Ac7p8hz; // AC 7.8 Hz
   let freq = proto_sdk.LeadOffFreq.Ac31p2hz; // AC 31.2 Hz，收到250个数据点约需要1300ms
 
-  proto_sdk.start_leadoff_check(); // reset leadoff cache
+  // 开始阻抗检测, 从芯片1~4轮询，每个芯片包含8个通道
+  // 至少轮询过一轮chip 1~4，才能获取到完整的32个通道的阻抗值
+  proto_sdk.start_leadoff_check(freq, current, (chip, impedance_values) => {
+    // chip 1~4
+    // impedance_values, Unit: kΩ, 计算结果不正确时，为0
+    console.log(`chip=${chip}, impedance_values=${impedance_values}`);
+  });
 
-  // 芯片1~4轮询，每个芯片包含8个通道
-  const chip_num = 4;
-  for (let i = 0; i < chip_num + 1; i++) {
-    setTimeout(() => {
-      // stop_leadoff_stream, 目前固件设计等同于stop_eeg_stream
-      sendCommand(client, proto_sdk.stop_eeg_stream);
+  // 停止阻抗检测
+  // proto_sdk.stop_leadoff_check();
 
-      if (i < chip_num) {
-        sendCommand(client, () =>
-          proto_sdk.set_leadoff_config(chips[i], freq, current)
-        );
-        // start_leadoff_stream, 目前固件设计等同于start_eeg_stream
-        sendCommand(client, proto_sdk.start_eeg_stream); // 开启连续EEG数据流通知, 之后收到的数据仅用于计算阻抗
-      } else {
-        // 至少轮询过一轮chip1~4，才能获取计算得到32个通道的阻抗值
-        // 32个通道的阻抗值，初始值为0，调用compute_impedance_values会计算并填充最新的数据
-        let impedance_values = proto_sdk.compute_impedance_values(current); // Unit: kΩ
-        console.log("impedance_values", impedance_values);
-      }
-    }, 1500 * i); // 间隔一段时间切换到下个芯片
-  }
+  // proto_sdk.start_leadoff_check(freq, current, (chip) => {
+  //   console.log("start_leadoff_check");
+  //   // stop_leadoff_stream, 目前固件设计等同于stop_eeg_stream
+  //   sendCommand(client, proto_sdk.stop_eeg_stream);
+  //   sendCommand(client, () =>
+  //     proto_sdk.set_leadoff_config(chip, freq, current)
+  //   );
+  //   // start_leadoff_stream, 目前固件设计等同于start_eeg_stream
+  //   sendCommand(client, proto_sdk.start_eeg_stream); // 开启连续EEG数据流通知, 之后收到的数据仅用于计算阻抗
+  // });
 }
 
 function start_eeg_stream(client) {
@@ -210,6 +194,10 @@ async function connectToService(address, port) {
 
   client.on("error", (error) => {
     console.error("Connection error:", error);
+  });
+  proto_sdk.set_tcp_write_callback((data) => {
+    const buffer = Buffer.from(data);
+    client.write(buffer);
   });
 }
 
