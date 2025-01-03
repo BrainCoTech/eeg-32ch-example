@@ -117,17 +117,6 @@ function start_leadoff_check(client) {
 
   // 停止阻抗检测
   // proto_sdk.stop_leadoff_check();
-
-  // proto_sdk.start_leadoff_check(freq, current, (chip) => {
-  //   console.log("start_leadoff_check");
-  //   // stop_leadoff_stream, 目前固件设计等同于stop_eeg_stream
-  //   sendCommand(client, proto_sdk.stop_eeg_stream);
-  //   sendCommand(client, () =>
-  //     proto_sdk.set_leadoff_config(chip, freq, current)
-  //   );
-  //   // start_leadoff_stream, 目前固件设计等同于start_eeg_stream
-  //   sendCommand(client, proto_sdk.start_eeg_stream); // 开启连续EEG数据流通知, 之后收到的数据仅用于计算阻抗
-  // });
 }
 
 function start_eeg_stream(client) {
