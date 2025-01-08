@@ -72,10 +72,11 @@ function updateEegChart() {
   }
 
   // 绘制更新后的数据
-  for (let i = 0; i < eegValues.length; i++) {
-    const rawData = eegValues[i]; // 连续的时域数据
-    const filterData = prepareEEGData(rawData);
-    if (i == 0) {
+  for (let channel = 0; channel < eegValues.length; channel++) {
+    const rawData = eegValues[channel]; // 连续的时域数据
+    const filterData = prepareEEGData(rawData, channel);
+    const filterData2 = prepareEEGData(rawData, channel);
+    if (channel == 0) {
       console.log(`data len=${rawData.length}`);
       console.log(`rawData=${rawData.slice(0, 10)}`);
       console.log(`filterData=${filterData.slice(0, 10)}`);
@@ -84,7 +85,7 @@ function updateEegChart() {
     const fftFreq = proto_sdk.get_filtered_freq(n, fs); // 频率轴
     const fftData = proto_sdk.get_filtered_fft(rawData, fs); // 原始EEG数据fft
     const fftData2 = proto_sdk.get_filtered_fft(filterData, fs); // 滤波后的EEG数据fft
-    if (i == 0) {
+    if (channel == 0) {
       console.log(`fftFreq=${fftFreq.slice(0, 10)}`);
       console.log(`fftData=${fftData.slice(0, 10)}`);
       console.log(`fftData2=${fftData2.slice(0, 10)}`);

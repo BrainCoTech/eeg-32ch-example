@@ -103,17 +103,24 @@ function scan_service() {
   browser.start();
 }
 
+// 注意：进行阻抗检测的同时无法采集正常的EEG数据流，需要分别进行
 function start_leadoff_check(client) {
-  let current = proto_sdk.LeadOffCurrent.Cur6nA; // 默认使用6nA
-  let freq = proto_sdk.LeadOffFreq.Ac31p2hz; // AC 31.2 Hz，收到250个数据点约需要1300ms
-
+  const current = proto_sdk.LeadOffCurrent.Cur6nA; // 默认使用6nA
+  const freq = proto_sdk.LeadOffFreq.Ac31p2hz; // AC 31.2 Hz
   // 开始阻抗检测, 从芯片1~4轮询，每个芯片包含8个通道
   // 至少轮询过一轮chip 1~4，才能获取到完整的32个通道的阻抗值
-  proto_sdk.start_leadoff_check(freq, current, (chip, impedance_values) => {
-    // chip 1~4
-    // impedance_values, Unit: kΩ, 计算结果不正确时，为0
-    console.log(`chip=${chip}, impedance_values=${impedance_values}`);
-  });
+  // const loop_check = false; // 是否循环检测
+  const loop_check = true; // 是否循环检测
+  proto_sdk.start_leadoff_check(
+    loop_check,
+    freq,
+    current,
+    (chip, impedance_values) => {
+      // chip 1~4
+      // impedance_values, Unit: kΩ, 计算结果不正确时，为0
+      console.log(`chip=${chip}, impedance_values=${impedance_values}`);
+    }
+  );
 
   // 停止阻抗检测
   // proto_sdk.stop_leadoff_check();
@@ -238,13 +245,16 @@ function updateEegChart() {
   }
 
   // TODO: 根据需要绘制EEG时域信号图表和FFT图表
-  for (let i = 0; i < eegValues.length; i++) {
+  for (let channel = 0; channel < eegValues.length; channel++) {
     // TODO: 绘制EEG时域信号图表
-    const rawData = eegValues[i]; // 连续的时域数据
-    if (i == 0) console.log(`rawData, ${rawData.slice(rawData.length - 10)}`);
-    const filterData = prepareEEGData(rawData);
-    if (i == 0)
-      console.log(`filterData, ${filterData.slice(filterData.length - 10)}`);
+    const rawData = eegValues[channel]; // 连续的时域数据
+    if (channel == 0)
+      console.log(
+        `rawData, len=${rawData.length}, ${rawData.slice(rawData.length - 5)}`
+      );
+    const filterData = prepareEEGData(rawData, channel);
+    if (channel == 0)
+      console.log(`filterData, ${filterData.slice(filterData.length - 5)}`);
 
     // TODO: 绘制FFT图表
     const n = rawData.length;

@@ -279,120 +279,84 @@ function getArrayU8FromWasm0(ptr, len) {
     return getUint8ArrayMemory0().subarray(ptr / 1, ptr / 1 + len);
 }
 
-function passArray8ToWasm0(arg, malloc) {
-    const ptr = malloc(arg.length * 1, 1) >>> 0;
-    getUint8ArrayMemory0().set(arg, ptr / 1);
-    WASM_VECTOR_LEN = arg.length;
-    return ptr;
+let cachedFloat64ArrayMemory0 = null;
+
+function getFloat64ArrayMemory0() {
+    if (cachedFloat64ArrayMemory0 === null || cachedFloat64ArrayMemory0.byteLength === 0) {
+        cachedFloat64ArrayMemory0 = new Float64Array(wasm.memory.buffer);
+    }
+    return cachedFloat64ArrayMemory0;
+}
+
+function getArrayF64FromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    return getFloat64ArrayMemory0().subarray(ptr / 8, ptr / 8 + len);
 }
 /**
- * @param {Uint8Array} data
- * @param {number} gain
- * @returns {Float32Array}
+ * @param {number} n
+ * @param {number} d
+ * @returns {Float64Array}
  */
-module.exports.parse_eeg_data = function(data, gain) {
+module.exports.fftfreq = function(n, d) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        const ptr0 = passArray8ToWasm0(data, wasm.__wbindgen_export_3);
-        const len0 = WASM_VECTOR_LEN;
-        wasm.parse_eeg_data(retptr, ptr0, len0, gain);
+        wasm.fftfreq(retptr, n, d);
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-        var v2 = getArrayF32FromWasm0(r0, r1).slice();
-        wasm.__wbindgen_export_1(r0, r1 * 4, 4);
-        return v2;
+        var v1 = getArrayF64FromWasm0(r0, r1).slice();
+        wasm.__wbindgen_export_1(r0, r1 * 8, 8);
+        return v1;
     } finally {
         wasm.__wbindgen_add_to_stack_pointer(16);
     }
 };
 
 /**
- * @param {string} level
+ * @param {number} n
+ * @param {number} fs
+ * @returns {Float64Array}
  */
-module.exports.init_logging = function(level) {
-    const ptr0 = passStringToWasm0(level, wasm.__wbindgen_export_3, wasm.__wbindgen_export_4);
-    const len0 = WASM_VECTOR_LEN;
-    wasm.init_logging(ptr0, len0);
-};
-
-let stack_pointer = 128;
-
-function addBorrowedObject(obj) {
-    if (stack_pointer == 1) throw new Error('out of js stack');
-    heap[--stack_pointer] = obj;
-    return stack_pointer;
-}
-/**
- * @param {Function} cb
- */
-module.exports.set_web_callback = function(cb) {
+module.exports.get_filtered_freq = function(n, fs) {
     try {
-        wasm.set_web_callback(addBorrowedObject(cb));
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        wasm.get_filtered_freq(retptr, n, fs);
+        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+        var v1 = getArrayF64FromWasm0(r0, r1).slice();
+        wasm.__wbindgen_export_1(r0, r1 * 8, 8);
+        return v1;
     } finally {
-        heap[stack_pointer++] = undefined;
+        wasm.__wbindgen_add_to_stack_pointer(16);
     }
 };
 
-let cachedInt8ArrayMemory0 = null;
-
-function getInt8ArrayMemory0() {
-    if (cachedInt8ArrayMemory0 === null || cachedInt8ArrayMemory0.byteLength === 0) {
-        cachedInt8ArrayMemory0 = new Int8Array(wasm.memory.buffer);
-    }
-    return cachedInt8ArrayMemory0;
-}
-
-function getArrayI8FromWasm0(ptr, len) {
-    ptr = ptr >>> 0;
-    return getInt8ArrayMemory0().subarray(ptr / 1, ptr / 1 + len);
-}
-
-function getArrayJsValueFromWasm0(ptr, len) {
-    ptr = ptr >>> 0;
-    const mem = getDataViewMemory0();
-    const result = [];
-    for (let i = ptr; i < ptr + 4 * len; i += 4) {
-        result.push(takeObject(mem.getUint32(i, true)));
-    }
-    return result;
-}
-
-function passArrayJsValueToWasm0(array, malloc) {
-    const ptr = malloc(array.length * 4, 4) >>> 0;
-    const mem = getDataViewMemory0();
-    for (let i = 0; i < array.length; i++) {
-        mem.setUint32(ptr + 4 * i, addHeapObject(array[i]), true);
-    }
-    WASM_VECTOR_LEN = array.length;
-    return ptr;
-}
-
-function passArray16ToWasm0(arg, malloc) {
-    const ptr = malloc(arg.length * 2, 2) >>> 0;
-    getUint16ArrayMemory0().set(arg, ptr / 2);
+function passArrayF64ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 8, 8) >>> 0;
+    getFloat64ArrayMemory0().set(arg, ptr / 8);
     WASM_VECTOR_LEN = arg.length;
     return ptr;
 }
-
-let cachedInt16ArrayMemory0 = null;
-
-function getInt16ArrayMemory0() {
-    if (cachedInt16ArrayMemory0 === null || cachedInt16ArrayMemory0.byteLength === 0) {
-        cachedInt16ArrayMemory0 = new Int16Array(wasm.memory.buffer);
+/**
+ * @param {Float64Array} data
+ * @param {number} fs
+ * @returns {Float64Array}
+ */
+module.exports.get_filtered_fft = function(data, fs) {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        const ptr0 = passArrayF64ToWasm0(data, wasm.__wbindgen_export_3);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.get_filtered_fft(retptr, ptr0, len0, fs);
+        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+        var v2 = getArrayF64FromWasm0(r0, r1).slice();
+        wasm.__wbindgen_export_1(r0, r1 * 8, 8);
+        return v2;
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
     }
-    return cachedInt16ArrayMemory0;
-}
+};
 
-function getArrayI16FromWasm0(ptr, len) {
-    ptr = ptr >>> 0;
-    return getInt16ArrayMemory0().subarray(ptr / 2, ptr / 2 + len);
-}
-
-function _assertClass(instance, klass) {
-    if (!(instance instanceof klass)) {
-        throw new Error(`expected instance of ${klass.name}`);
-    }
-}
 /**
  * @returns {any}
  */
@@ -577,6 +541,12 @@ module.exports.send_start_dfu = function(file_size, file_md5, file_sha256) {
     return takeObject(ret);
 };
 
+function passArray8ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 1, 1) >>> 0;
+    getUint8ArrayMemory0().set(arg, ptr / 1);
+    WASM_VECTOR_LEN = arg.length;
+    return ptr;
+}
 /**
  * @param {number} offset
  * @param {Uint8Array} data
@@ -606,26 +576,21 @@ module.exports.set_env_noise_filter_cfg = function(noise_type, fs) {
     wasm.set_env_noise_filter_cfg(noise_type, fs);
 };
 
-function passArrayF32ToWasm0(arg, malloc) {
-    const ptr = malloc(arg.length * 4, 4) >>> 0;
-    getFloat32ArrayMemory0().set(arg, ptr / 4);
-    WASM_VECTOR_LEN = arg.length;
-    return ptr;
-}
 /**
- * @param {Float32Array} data
- * @returns {Float32Array}
+ * @param {Float64Array} data
+ * @param {number} channel
+ * @returns {Float64Array}
  */
-module.exports.remove_env_noise = function(data) {
+module.exports.remove_env_noise = function(data, channel) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        const ptr0 = passArrayF32ToWasm0(data, wasm.__wbindgen_export_3);
+        const ptr0 = passArrayF64ToWasm0(data, wasm.__wbindgen_export_3);
         const len0 = WASM_VECTOR_LEN;
-        wasm.remove_env_noise(retptr, ptr0, len0);
+        wasm.remove_env_noise(retptr, ptr0, len0, channel);
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-        var v2 = getArrayF32FromWasm0(r0, r1).slice();
-        wasm.__wbindgen_export_1(r0, r1 * 4, 4);
+        var v2 = getArrayF64FromWasm0(r0, r1).slice();
+        wasm.__wbindgen_export_1(r0, r1 * 8, 8);
         return v2;
     } finally {
         wasm.__wbindgen_add_to_stack_pointer(16);
@@ -650,19 +615,47 @@ module.exports.set_eeg_filter_cfg = function(high_pass_enabled, high_cut, low_pa
 };
 
 /**
- * @param {Float32Array} data
- * @returns {Float32Array}
+ * @param {Float64Array} data
+ * @param {number} channel
+ * @returns {Float64Array}
  */
-module.exports.apply_eeg_filters = function(data) {
+module.exports.apply_eeg_filters = function(data, channel) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        const ptr0 = passArrayF32ToWasm0(data, wasm.__wbindgen_export_3);
+        const ptr0 = passArrayF64ToWasm0(data, wasm.__wbindgen_export_3);
         const len0 = WASM_VECTOR_LEN;
-        wasm.apply_eeg_filters(retptr, ptr0, len0);
+        wasm.apply_eeg_filters(retptr, ptr0, len0, channel);
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-        var v2 = getArrayF32FromWasm0(r0, r1).slice();
-        wasm.__wbindgen_export_1(r0, r1 * 4, 4);
+        var v2 = getArrayF64FromWasm0(r0, r1).slice();
+        wasm.__wbindgen_export_1(r0, r1 * 8, 8);
+        return v2;
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+    }
+};
+
+function _assertClass(instance, klass) {
+    if (!(instance instanceof klass)) {
+        throw new Error(`expected instance of ${klass.name}`);
+    }
+}
+/**
+ * @param {HighPassFilter} filter
+ * @param {Float64Array} data
+ * @returns {Float64Array}
+ */
+module.exports.apply_highpass = function(filter, data) {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        _assertClass(filter, HighPassFilter);
+        const ptr0 = passArrayF64ToWasm0(data, wasm.__wbindgen_export_3);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.apply_highpass(retptr, filter.__wbg_ptr, ptr0, len0);
+        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+        var v2 = getArrayF64FromWasm0(r0, r1).slice();
+        wasm.__wbindgen_export_1(r0, r1 * 8, 8);
         return v2;
     } finally {
         wasm.__wbindgen_add_to_stack_pointer(16);
@@ -670,22 +663,21 @@ module.exports.apply_eeg_filters = function(data) {
 };
 
 /**
- * @param {Float32Array} data
- * @param {number} order
- * @param {number} high_cut
- * @param {number} fs
- * @returns {Float32Array}
+ * @param {LowPassFilter} filter
+ * @param {Float64Array} data
+ * @returns {Float64Array}
  */
-module.exports.apply_highpass_filter = function(data, order, high_cut, fs) {
+module.exports.apply_lowpass = function(filter, data) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        const ptr0 = passArrayF32ToWasm0(data, wasm.__wbindgen_export_3);
+        _assertClass(filter, LowPassFilter);
+        const ptr0 = passArrayF64ToWasm0(data, wasm.__wbindgen_export_3);
         const len0 = WASM_VECTOR_LEN;
-        wasm.apply_highpass_filter(retptr, ptr0, len0, order, high_cut, fs);
+        wasm.apply_lowpass(retptr, filter.__wbg_ptr, ptr0, len0);
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-        var v2 = getArrayF32FromWasm0(r0, r1).slice();
-        wasm.__wbindgen_export_1(r0, r1 * 4, 4);
+        var v2 = getArrayF64FromWasm0(r0, r1).slice();
+        wasm.__wbindgen_export_1(r0, r1 * 8, 8);
         return v2;
     } finally {
         wasm.__wbindgen_add_to_stack_pointer(16);
@@ -693,22 +685,21 @@ module.exports.apply_highpass_filter = function(data, order, high_cut, fs) {
 };
 
 /**
- * @param {Float32Array} data
- * @param {number} order
- * @param {number} low_cut
- * @param {number} fs
- * @returns {Float32Array}
+ * @param {BandPassFilter} filter
+ * @param {Float64Array} data
+ * @returns {Float64Array}
  */
-module.exports.apply_lowpass_filter = function(data, order, low_cut, fs) {
+module.exports.apply_bandpass = function(filter, data) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        const ptr0 = passArrayF32ToWasm0(data, wasm.__wbindgen_export_3);
+        _assertClass(filter, BandPassFilter);
+        const ptr0 = passArrayF64ToWasm0(data, wasm.__wbindgen_export_3);
         const len0 = WASM_VECTOR_LEN;
-        wasm.apply_highpass_filter(retptr, ptr0, len0, order, low_cut, fs);
+        wasm.apply_bandpass(retptr, filter.__wbg_ptr, ptr0, len0);
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-        var v2 = getArrayF32FromWasm0(r0, r1).slice();
-        wasm.__wbindgen_export_1(r0, r1 * 4, 4);
+        var v2 = getArrayF64FromWasm0(r0, r1).slice();
+        wasm.__wbindgen_export_1(r0, r1 * 8, 8);
         return v2;
     } finally {
         wasm.__wbindgen_add_to_stack_pointer(16);
@@ -716,47 +707,21 @@ module.exports.apply_lowpass_filter = function(data, order, low_cut, fs) {
 };
 
 /**
- * @param {Float32Array} data
- * @param {number} order
- * @param {number} low_cut
- * @param {number} high_cut
- * @param {number} fs
- * @returns {Float32Array}
+ * @param {BandStopFilter} filter
+ * @param {Float64Array} data
+ * @returns {Float64Array}
  */
-module.exports.apply_bandpass_filter = function(data, order, low_cut, high_cut, fs) {
+module.exports.apply_bandstop = function(filter, data) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        const ptr0 = passArrayF32ToWasm0(data, wasm.__wbindgen_export_3);
+        _assertClass(filter, BandStopFilter);
+        const ptr0 = passArrayF64ToWasm0(data, wasm.__wbindgen_export_3);
         const len0 = WASM_VECTOR_LEN;
-        wasm.apply_bandpass_filter(retptr, ptr0, len0, order, low_cut, high_cut, fs);
+        wasm.apply_bandstop(retptr, filter.__wbg_ptr, ptr0, len0);
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-        var v2 = getArrayF32FromWasm0(r0, r1).slice();
-        wasm.__wbindgen_export_1(r0, r1 * 4, 4);
-        return v2;
-    } finally {
-        wasm.__wbindgen_add_to_stack_pointer(16);
-    }
-};
-
-/**
- * @param {Float32Array} data
- * @param {number} order
- * @param {number} low_cut
- * @param {number} high_cut
- * @param {number} fs
- * @returns {Float32Array}
- */
-module.exports.apply_bandstop_filter = function(data, order, low_cut, high_cut, fs) {
-    try {
-        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        const ptr0 = passArrayF32ToWasm0(data, wasm.__wbindgen_export_3);
-        const len0 = WASM_VECTOR_LEN;
-        wasm.apply_bandstop_filter(retptr, ptr0, len0, order, low_cut, high_cut, fs);
-        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
-        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-        var v2 = getArrayF32FromWasm0(r0, r1).slice();
-        wasm.__wbindgen_export_1(r0, r1 * 4, 4);
+        var v2 = getArrayF64FromWasm0(r0, r1).slice();
+        wasm.__wbindgen_export_1(r0, r1 * 8, 8);
         return v2;
     } finally {
         wasm.__wbindgen_add_to_stack_pointer(16);
@@ -778,96 +743,25 @@ module.exports.set_tcp_write_callback = function(callback) {
 };
 
 /**
+ * @param {boolean} loop_check
  * @param {LeadOffFreq} freq
  * @param {LeadOffCurrent} current
  * @param {Function} impedance_callback
  */
-module.exports.start_leadoff_check = function(freq, current, impedance_callback) {
-    wasm.start_leadoff_check(freq, current, addHeapObject(impedance_callback));
+module.exports.start_leadoff_check = function(loop_check, freq, current, impedance_callback) {
+    wasm.start_leadoff_check(loop_check, freq, current, addHeapObject(impedance_callback));
 };
 
 module.exports.stop_leadoff_check = function() {
     wasm.stop_leadoff_check();
 };
 
-let cachedFloat64ArrayMemory0 = null;
-
-function getFloat64ArrayMemory0() {
-    if (cachedFloat64ArrayMemory0 === null || cachedFloat64ArrayMemory0.byteLength === 0) {
-        cachedFloat64ArrayMemory0 = new Float64Array(wasm.memory.buffer);
-    }
-    return cachedFloat64ArrayMemory0;
-}
-
-function getArrayF64FromWasm0(ptr, len) {
-    ptr = ptr >>> 0;
-    return getFloat64ArrayMemory0().subarray(ptr / 8, ptr / 8 + len);
-}
-/**
- * @param {number} n
- * @param {number} d
- * @returns {Float64Array}
- */
-module.exports.fftfreq = function(n, d) {
-    try {
-        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.fftfreq(retptr, n, d);
-        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
-        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-        var v1 = getArrayF64FromWasm0(r0, r1).slice();
-        wasm.__wbindgen_export_1(r0, r1 * 8, 8);
-        return v1;
-    } finally {
-        wasm.__wbindgen_add_to_stack_pointer(16);
-    }
-};
-
-/**
- * @param {number} n
- * @param {number} fs
- * @returns {Float64Array}
- */
-module.exports.get_filtered_freq = function(n, fs) {
-    try {
-        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.get_filtered_freq(retptr, n, fs);
-        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
-        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-        var v1 = getArrayF64FromWasm0(r0, r1).slice();
-        wasm.__wbindgen_export_1(r0, r1 * 8, 8);
-        return v1;
-    } finally {
-        wasm.__wbindgen_add_to_stack_pointer(16);
-    }
-};
-
-function passArrayF64ToWasm0(arg, malloc) {
-    const ptr = malloc(arg.length * 8, 8) >>> 0;
-    getFloat64ArrayMemory0().set(arg, ptr / 8);
+function passArray16ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 2, 2) >>> 0;
+    getUint16ArrayMemory0().set(arg, ptr / 2);
     WASM_VECTOR_LEN = arg.length;
     return ptr;
 }
-/**
- * @param {Float64Array} data
- * @param {number} fs
- * @returns {Float64Array}
- */
-module.exports.get_filtered_fft = function(data, fs) {
-    try {
-        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        const ptr0 = passArrayF64ToWasm0(data, wasm.__wbindgen_export_3);
-        const len0 = WASM_VECTOR_LEN;
-        wasm.get_filtered_fft(retptr, ptr0, len0, fs);
-        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
-        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-        var v2 = getArrayF64FromWasm0(r0, r1).slice();
-        wasm.__wbindgen_export_1(r0, r1 * 8, 8);
-        return v2;
-    } finally {
-        wasm.__wbindgen_add_to_stack_pointer(16);
-    }
-};
-
 /**
  * @param {number} eeg_buffer_len
  */
@@ -890,6 +784,105 @@ module.exports.clear_imu_buffer = function() {
     wasm.clear_imu_buffer();
 };
 
+module.exports.clear_imp_eeg_buffers = function() {
+    wasm.clear_imp_eeg_buffers();
+};
+
+let cachedInt8ArrayMemory0 = null;
+
+function getInt8ArrayMemory0() {
+    if (cachedInt8ArrayMemory0 === null || cachedInt8ArrayMemory0.byteLength === 0) {
+        cachedInt8ArrayMemory0 = new Int8Array(wasm.memory.buffer);
+    }
+    return cachedInt8ArrayMemory0;
+}
+
+function getArrayI8FromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    return getInt8ArrayMemory0().subarray(ptr / 1, ptr / 1 + len);
+}
+
+function getArrayJsValueFromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    const mem = getDataViewMemory0();
+    const result = [];
+    for (let i = ptr; i < ptr + 4 * len; i += 4) {
+        result.push(takeObject(mem.getUint32(i, true)));
+    }
+    return result;
+}
+
+function passArrayJsValueToWasm0(array, malloc) {
+    const ptr = malloc(array.length * 4, 4) >>> 0;
+    const mem = getDataViewMemory0();
+    for (let i = 0; i < array.length; i++) {
+        mem.setUint32(ptr + 4 * i, addHeapObject(array[i]), true);
+    }
+    WASM_VECTOR_LEN = array.length;
+    return ptr;
+}
+
+let cachedInt16ArrayMemory0 = null;
+
+function getInt16ArrayMemory0() {
+    if (cachedInt16ArrayMemory0 === null || cachedInt16ArrayMemory0.byteLength === 0) {
+        cachedInt16ArrayMemory0 = new Int16Array(wasm.memory.buffer);
+    }
+    return cachedInt16ArrayMemory0;
+}
+
+function getArrayI16FromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    return getInt16ArrayMemory0().subarray(ptr / 2, ptr / 2 + len);
+}
+/**
+ * @param {Uint8Array} data
+ * @param {number} gain
+ * @returns {Float64Array}
+ */
+module.exports.parse_eeg_data = function(data, gain) {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        const ptr0 = passArray8ToWasm0(data, wasm.__wbindgen_export_3);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.parse_eeg_data(retptr, ptr0, len0, gain);
+        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+        var v2 = getArrayF64FromWasm0(r0, r1).slice();
+        wasm.__wbindgen_export_1(r0, r1 * 8, 8);
+        return v2;
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+    }
+};
+
+/**
+ * @param {string} level
+ */
+module.exports.init_logging = function(level) {
+    const ptr0 = passStringToWasm0(level, wasm.__wbindgen_export_3, wasm.__wbindgen_export_4);
+    const len0 = WASM_VECTOR_LEN;
+    wasm.init_logging(ptr0, len0);
+};
+
+let stack_pointer = 128;
+
+function addBorrowedObject(obj) {
+    if (stack_pointer == 1) throw new Error('out of js stack');
+    heap[--stack_pointer] = obj;
+    return stack_pointer;
+}
+/**
+ * @param {Function} cb
+ */
+module.exports.set_web_callback = function(cb) {
+    try {
+        wasm.set_web_callback(addBorrowedObject(cb));
+    } finally {
+        heap[stack_pointer++] = undefined;
+    }
+};
+
 function __wbg_adapter_44(arg0, arg1) {
     wasm.__wbindgen_export_5(arg0, arg1);
 }
@@ -898,7 +891,7 @@ function __wbg_adapter_47(arg0, arg1, arg2) {
     wasm.__wbindgen_export_6(arg0, arg1, addHeapObject(arg2));
 }
 
-function __wbg_adapter_327(arg0, arg1, arg2, arg3) {
+function __wbg_adapter_376(arg0, arg1, arg2, arg3) {
     wasm.__wbindgen_export_7(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
 }
 
@@ -1592,6 +1585,356 @@ class ActionSequenceItem {
 }
 module.exports.ActionSequenceItem = ActionSequenceItem;
 
+const BandPassFilterFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_bandpassfilter_free(ptr >>> 0, 1));
+
+class BandPassFilter {
+
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        BandPassFilterFinalization.unregister(this);
+        return ptr;
+    }
+
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_bandpassfilter_free(ptr, 0);
+    }
+    /**
+     * @returns {number}
+     */
+    get a() {
+        const ret = wasm.__wbg_get_bandpassfilter_a(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @param {number} arg0
+     */
+    set a(arg0) {
+        wasm.__wbg_set_bandpassfilter_a(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @returns {number}
+     */
+    get d1() {
+        const ret = wasm.__wbg_get_bandpassfilter_d1(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @param {number} arg0
+     */
+    set d1(arg0) {
+        wasm.__wbg_set_bandpassfilter_d1(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @returns {number}
+     */
+    get d2() {
+        const ret = wasm.__wbg_get_bandpassfilter_d2(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @param {number} arg0
+     */
+    set d2(arg0) {
+        wasm.__wbg_set_bandpassfilter_d2(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @returns {number}
+     */
+    get d3() {
+        const ret = wasm.__wbg_get_bandpassfilter_d3(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @param {number} arg0
+     */
+    set d3(arg0) {
+        wasm.__wbg_set_bandpassfilter_d3(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @returns {number}
+     */
+    get d4() {
+        const ret = wasm.__wbg_get_bandpassfilter_d4(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @param {number} arg0
+     */
+    set d4(arg0) {
+        wasm.__wbg_set_bandpassfilter_d4(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @returns {number}
+     */
+    get w0() {
+        const ret = wasm.__wbg_get_bandpassfilter_w0(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @param {number} arg0
+     */
+    set w0(arg0) {
+        wasm.__wbg_set_bandpassfilter_w0(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @returns {number}
+     */
+    get w1() {
+        const ret = wasm.__wbg_get_bandpassfilter_w1(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @param {number} arg0
+     */
+    set w1(arg0) {
+        wasm.__wbg_set_bandpassfilter_w1(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @returns {number}
+     */
+    get w2() {
+        const ret = wasm.__wbg_get_bandpassfilter_w2(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @param {number} arg0
+     */
+    set w2(arg0) {
+        wasm.__wbg_set_bandpassfilter_w2(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @returns {number}
+     */
+    get w3() {
+        const ret = wasm.__wbg_get_bandpassfilter_w3(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @param {number} arg0
+     */
+    set w3(arg0) {
+        wasm.__wbg_set_bandpassfilter_w3(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @returns {number}
+     */
+    get w4() {
+        const ret = wasm.__wbg_get_bandpassfilter_w4(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @param {number} arg0
+     */
+    set w4(arg0) {
+        wasm.__wbg_set_bandpassfilter_w4(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @param {number} _order
+     * @param {number} s
+     * @param {number} fl
+     * @param {number} fu
+     */
+    constructor(_order, s, fl, fu) {
+        const ret = wasm.bandpassfilter_new(_order, s, fl, fu);
+        this.__wbg_ptr = ret >>> 0;
+        BandPassFilterFinalization.register(this, this.__wbg_ptr, this);
+        return this;
+    }
+}
+module.exports.BandPassFilter = BandPassFilter;
+
+const BandStopFilterFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_bandstopfilter_free(ptr >>> 0, 1));
+
+class BandStopFilter {
+
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        BandStopFilterFinalization.unregister(this);
+        return ptr;
+    }
+
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_bandstopfilter_free(ptr, 0);
+    }
+    /**
+     * @returns {number}
+     */
+    get a() {
+        const ret = wasm.__wbg_get_bandpassfilter_a(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @param {number} arg0
+     */
+    set a(arg0) {
+        wasm.__wbg_set_bandpassfilter_a(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @returns {number}
+     */
+    get d1() {
+        const ret = wasm.__wbg_get_bandpassfilter_d1(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @param {number} arg0
+     */
+    set d1(arg0) {
+        wasm.__wbg_set_bandpassfilter_d1(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @returns {number}
+     */
+    get d2() {
+        const ret = wasm.__wbg_get_bandpassfilter_d2(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @param {number} arg0
+     */
+    set d2(arg0) {
+        wasm.__wbg_set_bandpassfilter_d2(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @returns {number}
+     */
+    get d3() {
+        const ret = wasm.__wbg_get_bandpassfilter_d3(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @param {number} arg0
+     */
+    set d3(arg0) {
+        wasm.__wbg_set_bandpassfilter_d3(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @returns {number}
+     */
+    get d4() {
+        const ret = wasm.__wbg_get_bandpassfilter_d4(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @param {number} arg0
+     */
+    set d4(arg0) {
+        wasm.__wbg_set_bandpassfilter_d4(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @returns {number}
+     */
+    get w0() {
+        const ret = wasm.__wbg_get_bandpassfilter_w0(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @param {number} arg0
+     */
+    set w0(arg0) {
+        wasm.__wbg_set_bandpassfilter_w0(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @returns {number}
+     */
+    get w1() {
+        const ret = wasm.__wbg_get_bandpassfilter_w1(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @param {number} arg0
+     */
+    set w1(arg0) {
+        wasm.__wbg_set_bandpassfilter_w1(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @returns {number}
+     */
+    get w2() {
+        const ret = wasm.__wbg_get_bandpassfilter_w2(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @param {number} arg0
+     */
+    set w2(arg0) {
+        wasm.__wbg_set_bandpassfilter_w2(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @returns {number}
+     */
+    get w3() {
+        const ret = wasm.__wbg_get_bandpassfilter_w3(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @param {number} arg0
+     */
+    set w3(arg0) {
+        wasm.__wbg_set_bandpassfilter_w3(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @returns {number}
+     */
+    get w4() {
+        const ret = wasm.__wbg_get_bandpassfilter_w4(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @param {number} arg0
+     */
+    set w4(arg0) {
+        wasm.__wbg_set_bandpassfilter_w4(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @returns {number}
+     */
+    get r() {
+        const ret = wasm.__wbg_get_bandstopfilter_r(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @param {number} arg0
+     */
+    set r(arg0) {
+        wasm.__wbg_set_bandstopfilter_r(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @returns {number}
+     */
+    get s() {
+        const ret = wasm.__wbg_get_bandstopfilter_s(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @param {number} arg0
+     */
+    set s(arg0) {
+        wasm.__wbg_set_bandstopfilter_s(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @param {number} _order
+     * @param {number} s
+     * @param {number} fl
+     * @param {number} fu
+     */
+    constructor(_order, s, fl, fu) {
+        const ret = wasm.bandstopfilter_new(_order, s, fl, fu);
+        this.__wbg_ptr = ret >>> 0;
+        BandStopFilterFinalization.register(this, this.__wbg_ptr, this);
+        return this;
+    }
+}
+module.exports.BandStopFilter = BandStopFilter;
+
 const ButtonPressEventFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_buttonpressevent_free(ptr >>> 0, 1));
@@ -1843,6 +2186,37 @@ class DeviceInfo {
 }
 module.exports.DeviceInfo = DeviceInfo;
 
+const HighPassFilterFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_highpassfilter_free(ptr >>> 0, 1));
+
+class HighPassFilter {
+
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        HighPassFilterFinalization.unregister(this);
+        return ptr;
+    }
+
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_highpassfilter_free(ptr, 0);
+    }
+    /**
+     * @param {number} _order
+     * @param {number} s
+     * @param {number} f
+     */
+    constructor(_order, s, f) {
+        const ret = wasm.highpassfilter_new(_order, s, f);
+        this.__wbg_ptr = ret >>> 0;
+        HighPassFilterFinalization.register(this, this.__wbg_ptr, this);
+        return this;
+    }
+}
+module.exports.HighPassFilter = HighPassFilter;
+
 const LedInfoFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_ledinfo_free(ptr >>> 0, 1));
@@ -1925,6 +2299,37 @@ class LedInfo {
     }
 }
 module.exports.LedInfo = LedInfo;
+
+const LowPassFilterFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_lowpassfilter_free(ptr >>> 0, 1));
+
+class LowPassFilter {
+
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        LowPassFilterFinalization.unregister(this);
+        return ptr;
+    }
+
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_lowpassfilter_free(ptr, 0);
+    }
+    /**
+     * @param {number} _order
+     * @param {number} s
+     * @param {number} f
+     */
+    constructor(_order, s, f) {
+        const ret = wasm.lowpassfilter_new(_order, s, f);
+        this.__wbg_ptr = ret >>> 0;
+        LowPassFilterFinalization.register(this, this.__wbg_ptr, this);
+        return this;
+    }
+}
+module.exports.LowPassFilter = LowPassFilter;
 
 const MessageParserFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
@@ -2249,6 +2654,26 @@ class SerialPortCfg {
     }
 }
 module.exports.SerialPortCfg = SerialPortCfg;
+
+const SosFilterFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_sosfilter_free(ptr >>> 0, 1));
+
+class SosFilter {
+
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        SosFilterFinalization.unregister(this);
+        return ptr;
+    }
+
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_sosfilter_free(ptr, 0);
+    }
+}
+module.exports.SosFilter = SosFilter;
 
 const StarkOTAFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
@@ -3442,7 +3867,7 @@ module.exports.__wbg_new_3d446df9155128ef = function(arg0, arg1) {
             const a = state0.a;
             state0.a = 0;
             try {
-                return __wbg_adapter_327(a, state0.b, arg0, arg1);
+                return __wbg_adapter_376(a, state0.b, arg0, arg1);
             } finally {
                 state0.a = a;
             }
@@ -3567,13 +3992,13 @@ module.exports.__wbindgen_cb_drop = function(arg0) {
     return ret;
 };
 
-module.exports.__wbindgen_closure_wrapper2614 = function(arg0, arg1, arg2) {
-    const ret = makeMutClosure(arg0, arg1, 979, __wbg_adapter_47);
+module.exports.__wbindgen_closure_wrapper2561 = function(arg0, arg1, arg2) {
+    const ret = makeMutClosure(arg0, arg1, 976, __wbg_adapter_47);
     return addHeapObject(ret);
 };
 
-module.exports.__wbindgen_closure_wrapper984 = function(arg0, arg1, arg2) {
-    const ret = makeClosure(arg0, arg1, 401, __wbg_adapter_44);
+module.exports.__wbindgen_closure_wrapper674 = function(arg0, arg1, arg2) {
+    const ret = makeClosure(arg0, arg1, 386, __wbg_adapter_44);
     return addHeapObject(ret);
 };
 

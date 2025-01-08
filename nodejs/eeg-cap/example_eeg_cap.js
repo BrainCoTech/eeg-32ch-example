@@ -1,7 +1,13 @@
+import { apply_bandstop } from "../pkg/bc_proto_sdk.js";
+
 let proto_sdk = null;
 let tcp_message_parser = null;
 let ble_message_parser = null;
-let default_eeg_filter_enabled = true;
+let default_eeg_filter_enabled = false;
+let custom_eeg_filter_ls = [];
+let custom_eeg_filter_hs = [];
+let custom_eeg_filter_bs = [];
+let custom_eeg_filter_bp = [];
 
 let EegSampleRate;
 let EegSignalGain;
@@ -73,6 +79,20 @@ function set_eeg_filter_cfg(cfg) {
   );
 }
 
+// TODO: update custom filters
+function init_custom_filters() {
+  console.info("init_custom_filters");
+  // console.debug("init_custom_filters", proto_sdk.BandStopFilter, proto_sdk.BandPassFilter, proto_sdk.HighPassFilter, proto_sdk.LowPassFilter);
+  const fs = 250.0;
+  const channel_num = 32;
+  for (let i = 0; i < channel_num; i++) {
+    custom_eeg_filter_ls.push(new proto_sdk.LowPassFilter(4, fs, 70));
+    custom_eeg_filter_hs.push(new proto_sdk.HighPassFilter(4, fs, 0.5));
+    custom_eeg_filter_bs.push(new proto_sdk.BandStopFilter(4, fs, 49, 51));
+    custom_eeg_filter_bp.push(new proto_sdk.BandPassFilter(4, fs, 2, 45));
+  }
+}
+
 async function initTcpMsgParser() {
   await initSDK();
 
@@ -110,22 +130,35 @@ function receiveBleData(data) {
 }
 
 // EEG数据滤波处理, channel_data为某个通道的数据
-function prepareEEGData(channel_data) {
+function prepareEEGData(channel_data, channel) {
   if (default_eeg_filter_enabled) {
-    channel_data = proto_sdk.apply_eeg_filters(channel_data);
+    channel_data = proto_sdk.apply_eeg_filters(channel_data, channel);
     // console.log("apply_eeg_filters", channel_data);
     return channel_data;
   } else {
     // custom filter
+    if (custom_eeg_filter_bs.length === 0) {
+      init_custom_filters();
+    }
+    // console.log(
+    //   "prepareEEGData, channel",
+    //   channel,
+    //   custom_eeg_filter_bs[channel],
+    //   custom_eeg_filter_bp[channel]
+    // );
+
     // 去除环境噪声
-    // channel_data = proto_sdk.remove_env_noise(channel_data);
-    channel_data = proto_sdk.apply_bandstop_filter(channel_data, 49, 51, 250);
+    channel_data = proto_sdk.apply_bandstop(
+      custom_eeg_filter_bs[channel],
+      channel_data
+    );
+    // 带通滤波
+    channel_data = proto_sdk.apply_bandpass(
+      custom_eeg_filter_bp[channel],
+      channel_data
+    );
 
-    // 带通滤波, 2~45Hz
-    data = proto_sdk.apply_bandpass_filter(data, order, lowCut, highCut, fs);
-
-    // channel_data = proto_sdk.apply_highpass_filter(channel_data, 0.5, 250);
-    console.log("apply_custom_filter", channel_data);
+    // console.log("apply_custom_filter", channel_data);
     return channel_data;
   }
 }

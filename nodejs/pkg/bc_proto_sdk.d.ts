@@ -1,8 +1,8 @@
 /* tslint:disable */
 /* eslint-disable */
-export function parse_eeg_data(data: Uint8Array, gain: number): Float32Array;
-export function init_logging(level: string): void;
-export function set_web_callback(cb: Function): void;
+export function fftfreq(n: number, d: number): Float64Array;
+export function get_filtered_freq(n: number, fs: number): Float64Array;
+export function get_filtered_fft(data: Float64Array, fs: number): Float64Array;
 export function get_device_info(): any;
 export function start_eeg_stream(): any;
 export function stop_eeg_stream(): any;
@@ -25,24 +25,25 @@ export function send_start_dfu(file_size: number, file_md5: string, file_sha256:
 export function send_dfu_data(offset: number, data: Uint8Array, finished: boolean): any;
 export function send_dfu_reboot(): any;
 export function set_env_noise_filter_cfg(noise_type: NoiseTypes, fs: number): void;
-export function remove_env_noise(data: Float32Array): Float32Array;
+export function remove_env_noise(data: Float64Array, channel: number): Float64Array;
 export function set_eeg_filter_cfg(high_pass_enabled: boolean, high_cut: number, low_pass_enabled: boolean, low_cut: number, band_pass_enabled: boolean, band_pass_low: number, band_pass_high: number, band_stop_enabled: boolean, band_stop_low: number, band_stop_high: number, fs: number): void;
-export function apply_eeg_filters(data: Float32Array): Float32Array;
-export function apply_highpass_filter(data: Float32Array, order: number, high_cut: number, fs: number): Float32Array;
-export function apply_lowpass_filter(data: Float32Array, order: number, low_cut: number, fs: number): Float32Array;
-export function apply_bandpass_filter(data: Float32Array, order: number, low_cut: number, high_cut: number, fs: number): Float32Array;
-export function apply_bandstop_filter(data: Float32Array, order: number, low_cut: number, high_cut: number, fs: number): Float32Array;
+export function apply_eeg_filters(data: Float64Array, channel: number): Float64Array;
+export function apply_highpass(filter: HighPassFilter, data: Float64Array): Float64Array;
+export function apply_lowpass(filter: LowPassFilter, data: Float64Array): Float64Array;
+export function apply_bandpass(filter: BandPassFilter, data: Float64Array): Float64Array;
+export function apply_bandstop(filter: BandStopFilter, data: Float64Array): Float64Array;
 export function set_resp_callback(callback: Function): void;
 export function set_tcp_write_callback(callback: Function): void;
-export function start_leadoff_check(freq: LeadOffFreq, current: LeadOffCurrent, impedance_callback: Function): void;
+export function start_leadoff_check(loop_check: boolean, freq: LeadOffFreq, current: LeadOffCurrent, impedance_callback: Function): void;
 export function stop_leadoff_check(): void;
-export function fftfreq(n: number, d: number): Float64Array;
-export function get_filtered_freq(n: number, fs: number): Float64Array;
-export function get_filtered_fft(data: Float64Array, fs: number): Float64Array;
 export function set_eeg_buffer_cfg(eeg_buffer_len: number): void;
 export function set_imu_buffer_cfg(imu_buffer_len: number): void;
 export function clear_eeg_buffer(): void;
 export function clear_imu_buffer(): void;
+export function clear_imp_eeg_buffers(): void;
+export function parse_eeg_data(data: Uint8Array, gain: number): Float64Array;
+export function init_logging(level: string): void;
+export function set_web_callback(cb: Function): void;
 export enum ActionCmd {
   SetStart = 1,
   SetFinish = 2,
@@ -377,6 +378,36 @@ export class ActionSequenceItem {
   speeds: Int16Array;
   strengths: Int16Array;
 }
+export class BandPassFilter {
+  free(): void;
+  constructor(_order: number, s: number, fl: number, fu: number);
+  a: number;
+  d1: number;
+  d2: number;
+  d3: number;
+  d4: number;
+  w0: number;
+  w1: number;
+  w2: number;
+  w3: number;
+  w4: number;
+}
+export class BandStopFilter {
+  free(): void;
+  constructor(_order: number, s: number, fl: number, fu: number);
+  a: number;
+  d1: number;
+  d2: number;
+  d3: number;
+  d4: number;
+  w0: number;
+  w1: number;
+  w2: number;
+  w3: number;
+  w4: number;
+  r: number;
+  s: number;
+}
 export class ButtonPressEvent {
   free(): void;
   constructor(timestamp: number, button_id: number, press_state: PressState);
@@ -403,12 +434,20 @@ export class DeviceInfo {
    */
   firmware_version: string;
 }
+export class HighPassFilter {
+  free(): void;
+  constructor(_order: number, s: number, f: number);
+}
 export class LedInfo {
   free(): void;
   constructor(color: LedColor, mode: LedMode);
   description(): string;
   color: LedColor;
   mode: LedMode;
+}
+export class LowPassFilter {
+  free(): void;
+  constructor(_order: number, s: number, f: number);
 }
 export class MessageParser {
   free(): void;
@@ -453,6 +492,10 @@ export class SerialPortCfg {
    * Baud rate for the serial communication
    */
   baudrate: Baudrate;
+}
+export class SosFilter {
+  private constructor();
+  free(): void;
 }
 export class StarkOTA {
   free(): void;
