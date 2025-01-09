@@ -1,8 +1,5 @@
 /* tslint:disable */
 /* eslint-disable */
-export function fftfreq(n: number, d: number): Float64Array;
-export function get_filtered_freq(n: number, fs: number): Float64Array;
-export function get_filtered_fft(data: Float64Array, fs: number): Float64Array;
 export function get_device_info(): any;
 export function start_eeg_stream(): any;
 export function stop_eeg_stream(): any;
@@ -11,13 +8,12 @@ export function get_imu_data_buffer(take: number, clean: boolean): any;
 export function get_eeg_config(): any;
 export function set_eeg_config(sr: EegSampleRate, gain: EegSignalGain, signal: EegSignalSource): any;
 export function get_leadoff_config(): any;
-export function set_leadoff_config(chip: LeadOffChip, freq: LeadOffFreq, current: LeadOffCurrent): any;
 export function start_imu_stream(): any;
 export function stop_imu_stream(): any;
 export function get_imu_config(): any;
 export function set_imu_config(sr: ImuSampleRate): any;
-export function get_ble_config(): any;
-export function set_ble_config(model: string, sn: string): any;
+export function get_ble_device_info(): any;
+export function set_ble_device_info(model: string, sn: string): any;
 export function get_wifi_status(): any;
 export function get_wifi_config(): any;
 export function set_wifi_config(bandwidth_40mhz: boolean, security: WiFiSecurity, ssid: string, password: string): any;
@@ -32,18 +28,21 @@ export function apply_highpass(filter: HighPassFilter, data: Float64Array): Floa
 export function apply_lowpass(filter: LowPassFilter, data: Float64Array): Float64Array;
 export function apply_bandpass(filter: BandPassFilter, data: Float64Array): Float64Array;
 export function apply_bandstop(filter: BandStopFilter, data: Float64Array): Float64Array;
-export function set_resp_callback(callback: Function): void;
+export function set_msg_resp_callback(callback: Function): void;
 export function set_tcp_write_callback(callback: Function): void;
 export function start_leadoff_check(loop_check: boolean, freq: LeadOffFreq, current: LeadOffCurrent, impedance_callback: Function): void;
 export function stop_leadoff_check(): void;
+export function fftfreq(n: number, d: number): Float64Array;
+export function get_filtered_freq(n: number, fs: number): Float64Array;
+export function get_filtered_fft(data: Float64Array, fs: number): Float64Array;
+export function parse_eeg_data(data: Uint8Array, gain: number): Float64Array;
 export function set_eeg_buffer_cfg(eeg_buffer_len: number): void;
 export function set_imu_buffer_cfg(imu_buffer_len: number): void;
 export function clear_eeg_buffer(): void;
 export function clear_imu_buffer(): void;
 export function clear_imp_eeg_buffers(): void;
-export function parse_eeg_data(data: Uint8Array, gain: number): Float64Array;
-export function init_logging(level: string): void;
 export function set_web_callback(cb: Function): void;
+export function init_logging(level: string): void;
 export enum ActionCmd {
   SetStart = 1,
   SetFinish = 2,
@@ -112,30 +111,27 @@ export enum EduModuleId {
 }
 export enum EegSampleRate {
   SR_None = 0,
-  SR_250Hz = 111,
-  SR_500Hz = 95,
-  SR_1000Hz = 79,
-  SR_2000Hz = 63,
-  SR_4000Hz = 47,
-  SR_8000Hz = 31,
-  SR_16000Hz = 15,
+  SR_250Hz = 1,
+  SR_500Hz = 2,
+  SR_1000Hz = 3,
+  SR_2000Hz = 4,
 }
 export enum EegSignalGain {
   GAIN_NONE = 0,
-  GAIN_1 = 15,
-  GAIN_2 = 31,
-  GAIN_4 = 47,
-  GAIN_6 = 63,
-  GAIN_8 = 79,
-  GAIN_12 = 95,
-  GAIN_24 = 111,
+  GAIN_1 = 1,
+  GAIN_2 = 2,
+  GAIN_4 = 3,
+  GAIN_6 = 4,
+  GAIN_8 = 5,
+  GAIN_12 = 6,
+  GAIN_24 = 7,
 }
 export enum EegSignalSource {
   SIGNAL_NONE = 0,
-  NORMAL = 15,
-  SHORTED = 31,
-  MVDD = 63,
-  TEST_SIGNAL = 95,
+  NORMAL = 1,
+  SHORTED = 2,
+  MVDD = 3,
+  TEST_SIGNAL = 4,
 }
 export enum FingerId {
   Thumb = 1,

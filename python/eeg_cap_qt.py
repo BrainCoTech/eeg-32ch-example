@@ -12,7 +12,6 @@ from eeg_cap_model import (
     EEGData,
     eeg_cap,
     get_addr_port,
-    perform_bandpass,
     set_env_noise_filter_cfg,
     remove_env_noise,
     set_eeg_buffer_length,
@@ -24,7 +23,7 @@ logger = getLogger(logging.INFO)
 # EEG数据
 fs = 250  # 采样频率
 num_channels = 32  # 通道数
-eeg_buffer_length = 1000  # 默认缓冲区长度, 1000个数据点，每个数据点有32个通道，每个通道的值类型为float32，即4字节，大约占用128KB内存, 1000 * 32 * 4 = 128000 bytes
+eeg_buffer_length = 250  # 默认缓冲区长度, 1000个数据点，每个数据点有32个通道，每个通道的值类型为float32，即4字节，大约占用128KB内存, 1000 * 32 * 4 = 128000 bytes
 eeg_seq_num = None  # EEG数据包序号
 eeg_values = np.zeros((num_channels, eeg_buffer_length))  # 32通道的EEG数据
 
@@ -32,6 +31,9 @@ eeg_values = np.zeros((num_channels, eeg_buffer_length))  # 32通道的EEG数据
 order = 4  # 滤波器阶数
 low_cut = 2  # 低通滤波截止频率
 high_cut = 45  # 高通滤波截止频率
+bs_filters = [
+    eeg_cap.BandPassFilter(fs, low_cut, high_cut) for i in range(num_channels)
+]
 
 # 创建32个通道的图表
 plots = []
@@ -40,7 +42,7 @@ curves = []
 
 def update_plot():
     # 获取EEG数据
-    max_len = 100  # 每次获取的数据点数, 超过缓冲区长度时，返回缓冲区中的所有数据
+    max_len = 250  # 每次获取的数据点数, 超过缓冲区长度时，返回缓冲区中的所有数据
     clean = True  # 是否清空缓冲区
     eeg_buff = eeg_cap.get_eeg_buffer(max_len, clean)
     logger.info(f"get_eeg_buffer result len={len(eeg_buff)}")
@@ -49,7 +51,7 @@ def update_plot():
 
     for row in eeg_buff:
         eeg_data = EEGData.from_data(row)
-        channel_values = eeg_data.data
+        channel_values = eeg_data.channel_values
 
         # 更新每个通道的数据
         for i in range(len(channel_values)):
@@ -57,11 +59,12 @@ def update_plot():
             eeg_values[i, -1] = channel_values[i]  # 更新最新的数据值
 
     # 绘制更新后的数据
-    for i in range(len(eeg_values)):
-        raw_data = eeg_values[i]
-        data = remove_env_noise(raw_data)
-        data = perform_bandpass(data, order, low_cut, high_cut, fs)
-        curves[i].setData(data)  # 更新曲线
+    for channel in range(len(eeg_values)):
+        raw_data = eeg_values[channel]
+        # curves[channel].setData(raw_data)  # 更新曲线
+        data = remove_env_noise(raw_data, channel)
+        data = bs_filters[channel].filter(data)
+        curves[channel].setData(data)  # 更新曲线
 
 
 async def scan_and_connect(loop):
@@ -86,15 +89,22 @@ async def scan_and_connect(loop):
 
     # fmt: off
     # 配置EEG/IMU
-    # await client.set_eeg_config(eeg_cap.EegSampleRate.SR_2000Hz, eeg_cap.EegSignalGain.GAIN_6, eeg_cap.EegSignalSource.NORMAL)
+    # 测试信号
+    # await client.set_eeg_config(eeg_cap.EegSampleRate.SR_2000Hz, eeg_cap.EegSignalGain.GAIN_6, eeg_cap.EegSignalSource.TEST_SIGNAL)
+    # await client.set_eeg_config(eeg_cap.EegSampleRate.SR_1000Hz, eeg_cap.EegSignalGain.GAIN_6, eeg_cap.EegSignalSource.TEST_SIGNAL)
+    # await client.set_eeg_config(eeg_cap.EegSampleRate.SR_500Hz, eeg_cap.EegSignalGain.GAIN_6, eeg_cap.EegSignalSource.TEST_SIGNAL)
+    # await client.set_eeg_config(eeg_cap.EegSampleRate.SR_250Hz, eeg_cap.EegSignalGain.GAIN_6, eeg_cap.EegSignalSource.TEST_SIGNAL)
+    # 正常信号
+    await client.set_eeg_config(eeg_cap.EegSampleRate.SR_250Hz, eeg_cap.EegSignalGain.GAIN_6, eeg_cap.EegSignalSource.NORMAL)
     # await client.set_imu_config(eeg_cap.ImuSampleRate.SR_50Hz)
-    # await client.set_imu_config(eeg_cap.ImuSampleRate.SR_100Hz)
+    await client.set_imu_config(eeg_cap.ImuSampleRate.SR_100Hz)
 
     # 开始/停止EEG/IMU数据流
     # await client.stop_eeg_stream()
     # await client.stop_imu_stream()
     await client.start_eeg_stream()
-    # await client.start_imu_stream()
+    await client.start_imu_stream()
+
 
     try:
         loop.run_forever()  # 事件循环运行直到手动退出
@@ -106,7 +116,7 @@ async def scan_and_connect(loop):
 app = QApplication([])
 
 win = pg.GraphicsLayoutWidget(show=True, title="32-Channel Dynamic Plot")
-win.resize(1000, 600)
+win.resize(1600, 800)
 win.setWindowTitle("32-Channel Dynamic Plot")
 
 # 生成32个图表，每个图表表示一个通道
@@ -142,5 +152,5 @@ if __name__ == "__main__":
     init_cfg()
     loop = QEventLoop(app)
     asyncio.set_event_loop(loop)
-    timer = init_timer() # 需要持有timer
+    timer = init_timer()  # 需要持有timer
     asyncio.run(scan_and_connect(loop))

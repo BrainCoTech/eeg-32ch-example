@@ -138,7 +138,7 @@ function mock_recv_data() {
   for (const msg of msgs) {
     receiveTcpData(msg);
   }
-  // return;
+  return;
 
   // read from file, eeg_cap_sample_eeg.log
   console.log(path.resolve(__dirname, "eeg_cap_sample_eeg.log"));
@@ -168,7 +168,7 @@ function mock_recv_data() {
 await initTcpMsgParser();
 initCfg();
 mock_recv_data();
-await setTimeout(() => {
-  updateEegChart();
-  printImuData();
-}, 1000);
+// await setTimeout(() => {
+//   updateEegChart();
+//   printImuData();
+// }, 1000);

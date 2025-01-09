@@ -32,7 +32,7 @@ async function initSDK() {
   // 给新对象添加 on 方法
   proto_sdk.on = function (eventName, callback) {
     if (eventName === "resp") {
-      proto_sdk.set_resp_callback(callback);
+      proto_sdk.set_msg_resp_callback(callback);
     }
   };
 

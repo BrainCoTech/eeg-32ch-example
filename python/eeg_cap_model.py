@@ -1,14 +1,16 @@
 # from enum import IntEnum  # Enum declarations
-import json
+# import json
 # import base64
 import bc_proto_sdk
+
 eeg_cap = bc_proto_sdk.eeg_cap
+
 
 async def get_addr_port():
     # 扫描不到service时，可以对照[Discovery APP](https://apps.apple.com/cn/app/discovery-dns-sd-browser/id1381004916)
     # 扫描设备IP地址和端口
     # 指定SN号，适用于有多个设备的情况
-    # with_sn = "EEG123456789"
+    # with_sn = "SN-12345678"
     # (addr, port) = await eeg_cap.start_scan(with_sn)
     # # 不指定SN号，返回第一个扫描到的设备
     # # (addr, port) = await eeg_cap.start_scan()
@@ -17,38 +19,33 @@ async def get_addr_port():
     # await eeg_cap.stop_scan()
 
     # 如果已知IP地址和端口，可以直接指定
-    # (addr, port) = ("192.168.3.7", 53129)  # hailong-dev
-    (addr, port) = ("192.168.3.23", 53129)  # xiangao-dev
-    # (addr, port) = ("192.168.3.12", 53129) # yongle-dev
+    (addr, port) = ("192.168.3.7", 53129)  # hailong-dev
+    # (addr, port) = ("192.168.3.12", 53129)  # xiangao-dev
+    # (addr, port) = ("192.168.3.23", 53129) # yongle-dev
 
     return (addr, port)
 
 
-# order: 4
-def perform_highpass(data: list, order: int, high_cut: float, fs: float):
-    return eeg_cap.apply_highpass_filter(data, order, high_cut, fs)
-
-def perform_lowpass(data: list, order: int, low_cut: float, fs: float):
-    return eeg_cap.apply_lowpass_filter(data, order, low_cut, fs)
-
-def perform_bandpass(data: list, order: int, low_cut: float, high_cut: float, fs: float):
-    return eeg_cap.apply_bandpass_filter(data, order, low_cut, high_cut, fs)
-
-def perform_bandstop(data: list, order: int, low_cut: float, high_cut: float, fs: float):
-    return eeg_cap.apply_bandstop_filter(data, order, low_cut, high_cut, fs)
-
-# 默认50Hz环境噪声滤波，fs=250Hz
-def set_env_noise_filter_cfg(type, fs: float):
+# 默认50Hz环境噪声滤波，fs默认 250Hz
+def set_env_noise_filter_cfg(type, fs: float = 250):
     return eeg_cap.set_env_noise_filter_cfg(type, fs)
 
-def remove_env_noise(data: list):
-    return eeg_cap.remove_env_noise(data)
+
+def remove_env_noise(data: list, channel: int):
+    return eeg_cap.remove_env_noise(data, channel)
+
+
+def perfrom_impendance_filter(data: list, channel: int):
+    return eeg_cap.apply_impendance_filter(data, channel)
+
 
 def set_eeg_buffer_length(len: int):
     return eeg_cap.set_eeg_buffer_cfg(len)
 
+
 def set_imu_buffer_length(len: int):
     return eeg_cap.set_imu_buffer_cfg(len)
+
 
 # 定义 EEGData 类
 class EEGData:
@@ -88,7 +85,7 @@ class IMUData:
     @staticmethod
     def from_data(arr: bytes):
         return IMUData(arr[0], arr[1:4], arr[4:7], arr[7:])
-    
+
     def __init__(self, timestamp, acc, gyro, mag):
         self.timestamp = timestamp
         self.acc = IMUCord(acc[0], acc[1], acc[2])

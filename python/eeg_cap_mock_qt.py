@@ -16,7 +16,7 @@ eeg_values = np.zeros((num_channels, data_length))
 app = QApplication([])
 
 win = pg.GraphicsLayoutWidget(show=True, title="32-Channel Dynamic Plot")
-win.resize(1000, 600)
+win.resize(1600, 800)
 win.setWindowTitle("32-Channel Dynamic Plot")
 
 # 生成32个图表，每个图表表示一个通道
@@ -32,11 +32,28 @@ for i in range(num_channels):
         win.nextRow()
 
 
+# 生成模拟数据
+def generate_mock_data(num_samples, num_channels, frequency_multiplier=1):
+    t = np.linspace(0, 2 * np.pi * frequency_multiplier, num_samples)
+    data = np.zeros((num_samples, num_channels))
+    for i in range(num_channels):
+        if i % 2 == 0:
+            data[:, i] = np.sin(t + i * np.pi / num_channels)  # 生成 sin 波
+        else:
+            data[:, i] = np.cos(t + i * np.pi / num_channels)  # 生成 cos 波
+    return data
+
+
+mock_data = generate_mock_data(data_length, num_channels, frequency_multiplier=10)
+mock_index = 0
+
+
 # 更新函数
 def mock_update_plot():
-    global eeg_values
+    global eeg_values, mock_data, mock_index
     # 随机生成新数据
-    new_data = np.random.uniform(-1, 1, size=(num_channels,))
+    new_data = mock_data[mock_index]
+    mock_index = (mock_index + 1) % len(mock_data)
     eeg_values = np.roll(eeg_values, -1, axis=1)  # 左移
     eeg_values[:, -1] = new_data  # 更新最新数据
 
@@ -50,21 +67,15 @@ def init_timer():
     # 定时器
     timer = pg.QtCore.QTimer()
     timer.timeout.connect(mock_update_plot)
-    timer.start(50)  # 每50ms更新一次
+    timer.start(20)  # 每20ms更新一次
     return timer
 
-async def mock_scan_and_connect(loop):
-    # 示例逻辑：异步连接设备
-    print("Scanning and connecting to device...")
-    await asyncio.sleep(2)  # 模拟扫描耗时
-    print("Device connected.")
-    try:
-        loop.run_forever()  # 事件循环运行直到手动退出
-    finally:
-        loop.close()
 
 if __name__ == "__main__":
     loop = QEventLoop(app)
     asyncio.set_event_loop(loop)
     timer = init_timer()
-    asyncio.run(mock_scan_and_connect(loop))
+    try:
+        loop.run_forever()  # 事件循环运行直到手动退出
+    finally:
+        loop.close()

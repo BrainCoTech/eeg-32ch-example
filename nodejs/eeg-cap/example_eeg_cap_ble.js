@@ -23,7 +23,7 @@ async function onConnected() {
   /// setter methods
   // const model = "EEG32";
   // const sn = "SN-123456";
-  // sendCommand(ble, () => proto_sdk.set_ble_config(model, sn));
+  // sendCommand(ble, () => proto_sdk.set_ble_device_info(model, sn));
 
   // const ssid = "eeg-wifi";
   // const password = "0123456789";
@@ -37,7 +37,7 @@ async function onConnected() {
   // );
 
   /// getter methods
-  sendCommand(ble, proto_sdk.get_ble_config);
+  sendCommand(ble, proto_sdk.get_ble_device_info);
   sendCommand(ble, proto_sdk.get_wifi_status);
   sendCommand(ble, proto_sdk.get_wifi_config);
 }

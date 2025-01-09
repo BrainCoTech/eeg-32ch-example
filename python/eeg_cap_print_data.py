@@ -9,7 +9,6 @@ from eeg_cap_model import (
     IMUData,
     eeg_cap,
     get_addr_port,
-    perform_bandpass,
     set_env_noise_filter_cfg,
     remove_env_noise,
     set_eeg_buffer_length,
@@ -29,6 +28,9 @@ eeg_values = np.zeros((num_channels, eeg_buffer_length))  # 32通道的EEG数据
 order = 4  # 滤波器阶数
 low_cut = 2  # 低通滤波截止频率
 high_cut = 45  # 高通滤波截止频率
+bs_filters = [
+    eeg_cap.BandPassFilter(fs, low_cut, high_cut) for i in range(num_channels)
+]
 
 
 def print_imu_data():
@@ -74,15 +76,15 @@ def print_eeg_data():
 
     # 打印数据
     print_eeg_timestamps(eeg_data_arr)
-    for i in range(len(eeg_values)):
-        raw_data = eeg_values[i]
-        data = remove_env_noise(raw_data)
-        data = perform_bandpass(data, order, low_cut, high_cut, fs)
+    for channel in range(len(eeg_values)):
+        raw_data = eeg_values[channel]
+        data = remove_env_noise(raw_data, channel)
+        data = bs_filters[channel].filter(data)
         # 打印通道1数据
-        # if i == 0:
-        # logger.debug(f"raw_data: {raw_data}")
-        # logger.debug(f"data: {data}")
-        # logger.info(f"data len: {len(data)}")
+        if i == 0:
+            logger.debug(f"raw_data: {raw_data}")
+            logger.debug(f"data: {data}")
+            logger.info(f"data len: {len(data)}")
 
 
 def print_eeg_timestamps(data):

@@ -19,10 +19,10 @@ async def stop_scan_and_connect(id):
     await ble.connect(id)
     logger.info("Connected")
 
-    # test set_ble_config
+    # test set_ble_device_info
     # model = "EEG32"
     # sn = "SN-12345678"
-    # await ecap.set_ble_config(id, model, sn)
+    # await ecap.set_ble_device_info(id, model, sn)
 
     # test set_wifi_config
     # bandwidth_40hz = True
@@ -32,7 +32,7 @@ async def stop_scan_and_connect(id):
     # await ecap.set_wifi_config(id, bandwidth_40hz, security, ssid, password)
 
     # getters
-    msgId = await ecap.get_ble_config(id)
+    msgId = await ecap.get_ble_device_info(id)
     logger.warning(f"msgId: {msgId}")
     msgId = await ecap.get_wifi_config(id)
     logger.warning(f"msgId: {msgId}")
@@ -42,7 +42,8 @@ async def stop_scan_and_connect(id):
 
 def on_device_discovered(id, device):
     logger.info(f"Device {id} discovered: {device.name}")
-    if device.name == "Zephyr [EEG-E5FF3]":
+    if device.name == "Zephyr [EEG-776E2]":
+        # if device.name == "Zephyr [EEG-E5FF3]":
         logger.info(f"found device")
         asyncio.run_coroutine_threadsafe(stop_scan_and_connect(id), loop)
 

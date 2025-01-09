@@ -45,9 +45,9 @@ const client = new net.Socket();
 
 // 如果已知IP地址和端口，可以直接指定
 // scan_service();
-// let addr = "192.168.3.7"; // hailong-dev
+let addr = "192.168.3.7"; // hailong-dev
 // let addr = "192.168.3.12"; // xiangao-dev
-let addr = "192.168.3.23"; // yongle-dev
+// let addr = "192.168.3.23"; // yongle-dev
 let port = 53129;
 connectToService(addr, port);
 
@@ -103,8 +103,8 @@ function scan_service() {
   browser.start();
 }
 
-// 注意：进行阻抗检测的同时无法采集正常的EEG数据流，需要分别进行
-function start_leadoff_check(client) {
+// 开始阻抗检测，与正常EEG模式互斥
+function start_leadoff_check() {
   const current = proto_sdk.LeadOffCurrent.Cur6nA; // 默认使用6nA
   const freq = proto_sdk.LeadOffFreq.Ac31p2hz; // AC 31.2 Hz
   // 开始阻抗检测, 从芯片1~4轮询，每个芯片包含8个通道
@@ -121,11 +121,14 @@ function start_leadoff_check(client) {
       console.log(`chip=${chip}, impedance_values=${impedance_values}`);
     }
   );
-
-  // 停止阻抗检测
-  // proto_sdk.stop_leadoff_check();
 }
 
+// 停止阻抗检测，与正常EEG模式互斥，注意：从阻抗检测模式切换到正常EEG模式, 需要先停止阻抗检测
+function stop_leadoff_check() {
+  proto_sdk.stop_leadoff_check();
+}
+
+// 开始正常EEG模式，注意：从阻抗检测模式切换到正常EEG模式, 需要先停止阻抗检测
 function start_eeg_stream(client) {
   // 配置EEG为正常佩戴信号
   // sendCommand(client, () =>
@@ -148,6 +151,11 @@ function start_eeg_stream(client) {
   sendCommand(client, proto_sdk.start_eeg_stream); // 开启连续EEG数据流通知
 }
 
+// 停止EEG数据流
+function stop_eeg_stream(client) {
+  sendCommand(client, proto_sdk.stop_eeg_stream);
+}
+
 function start_imu_stream(client) {
   // 设置IMU采样率
   sendCommand(client, () => proto_sdk.set_imu_config(ImuSampleRate.SR_50Hz));
@@ -166,13 +174,10 @@ async function connectToService(address, port) {
     // 读取设备信息
     // sendCommand(client, proto_sdk.get_device_info);
 
-    // 开始/停止EEG/IMU数据流
-    // sendCommand(client, proto_sdk.stop_eeg_stream);
-    // sendCommand(client, proto_sdk.stop_imu_stream);
-
     // 开启阻抗检测模式，与正常EEG模式互斥
-    start_leadoff_check(client);
+    start_leadoff_check();
 
+    // 开启正常工作模式
     // start_eeg_stream(client);
     // start_imu_stream(client);
   });
