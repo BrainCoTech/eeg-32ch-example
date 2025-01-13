@@ -45,9 +45,9 @@ const client = new net.Socket();
 
 // 如果已知IP地址和端口，可以直接指定
 // scan_service();
-let addr = "192.168.3.7"; // hailong-dev
+// let addr = "192.168.3.7"; // hailong-dev
 // let addr = "192.168.3.12"; // xiangao-dev
-// let addr = "192.168.3.23"; // yongle-dev
+let addr = "192.168.3.23"; // yongle-dev
 let port = 53129;
 connectToService(addr, port);
 

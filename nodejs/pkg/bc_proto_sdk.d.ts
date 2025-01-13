@@ -1,5 +1,16 @@
 /* tslint:disable */
 /* eslint-disable */
+export function fftfreq(n: number, d: number): Float64Array;
+export function get_filtered_freq(n: number, fs: number): Float64Array;
+export function get_filtered_fft(data: Float64Array, fs: number): Float64Array;
+export function set_eeg_buffer_cfg(eeg_buffer_len: number): void;
+export function set_imu_buffer_cfg(imu_buffer_len: number): void;
+export function clear_eeg_buffer(): void;
+export function clear_imu_buffer(): void;
+export function clear_imp_eeg_buffers(): void;
+export function init_logging(level: string): void;
+export function set_web_callback(cb: Function): void;
+export function parse_eeg_data(data: Uint8Array, gain: number): Float64Array;
 export function get_device_info(): any;
 export function start_eeg_stream(): any;
 export function stop_eeg_stream(): any;
@@ -32,17 +43,6 @@ export function set_msg_resp_callback(callback: Function): void;
 export function set_tcp_write_callback(callback: Function): void;
 export function start_leadoff_check(loop_check: boolean, freq: LeadOffFreq, current: LeadOffCurrent, impedance_callback: Function): void;
 export function stop_leadoff_check(): void;
-export function fftfreq(n: number, d: number): Float64Array;
-export function get_filtered_freq(n: number, fs: number): Float64Array;
-export function get_filtered_fft(data: Float64Array, fs: number): Float64Array;
-export function parse_eeg_data(data: Uint8Array, gain: number): Float64Array;
-export function set_eeg_buffer_cfg(eeg_buffer_len: number): void;
-export function set_imu_buffer_cfg(imu_buffer_len: number): void;
-export function clear_eeg_buffer(): void;
-export function clear_imu_buffer(): void;
-export function clear_imp_eeg_buffers(): void;
-export function set_web_callback(cb: Function): void;
-export function init_logging(level: string): void;
 export enum ActionCmd {
   SetStart = 1,
   SetFinish = 2,
@@ -498,9 +498,6 @@ export class StarkOTA {
   constructor();
   get_dfu_state(): DfuState;
   is_dfu_available(): boolean;
-  set_dfu_file_path(path: string): void;
-  start_dfu_mode_check(): void;
-  stop_check_dfu_mode(): void;
   set_dfu_state_callback(cb: Function): void;
   set_dfu_progress_callback(cb: Function): void;
   trigger_dfu_state(state: DfuState): Promise<void>;

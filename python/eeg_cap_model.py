@@ -19,9 +19,9 @@ async def get_addr_port():
     # await eeg_cap.stop_scan()
 
     # 如果已知IP地址和端口，可以直接指定
-    (addr, port) = ("192.168.3.7", 53129)  # hailong-dev
+    # (addr, port) = ("192.168.3.7", 53129)  # hailong-dev
     # (addr, port) = ("192.168.3.12", 53129)  # xiangao-dev
-    # (addr, port) = ("192.168.3.23", 53129) # yongle-dev
+    (addr, port) = ("192.168.3.23", 53129) # yongle-dev
 
     return (addr, port)
 
