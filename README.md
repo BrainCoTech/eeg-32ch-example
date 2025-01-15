@@ -15,11 +15,16 @@
 ```shell
 cd python
 pip install -r requirements.txt
-python eeg_cap_mock.py
-python eeg_cap_mock_qt.py
+# BLE 查询WiFi状态，设置WiFi
+python eeg_cap_ble.py 
+# QT图表，使用Mock数据
+python eeg_cap_mock_qt.py 
+# QT图表，使用脑电帽数据
+python eeg_cap_qt.py 
+# 周期打印收到EEG和IMU数据
 python eeg_cap_print_data.py
-python eeg_cap_save_data.py
-python eeg_cap_qt.py
+# EEEG阻抗值检测
+python eeg_cap_impendance.py
 ```
 
 ## NodeJS Example
