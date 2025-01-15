@@ -117,7 +117,7 @@ function start_leadoff_check() {
     current,
     (chip, impedance_values) => {
       // chip 1~4
-      // impedance_values, Unit: kΩ, 计算结果不正确时，为0
+      // impedance_values, Unit: kΩ, 计算结果不正确时，为0或负数
       console.log(`chip=${chip}, impedance_values=${impedance_values}`);
     }
   );
