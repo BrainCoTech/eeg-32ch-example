@@ -358,10 +358,10 @@ export enum WiFiSecurity {
 }
 export class ActionSequence {
   free(): void;
-  constructor(action_id: ActionSequenceId, data: (ActionSequenceItem)[]);
+  constructor(action_id: ActionSequenceId, data: ActionSequenceItem[]);
   description(): string;
   action_id: ActionSequenceId;
-  data: (ActionSequenceItem)[];
+  data: ActionSequenceItem[];
 }
 export class ActionSequenceItem {
   free(): void;
@@ -507,7 +507,7 @@ export class StarkOTA {
 export class StarkSDK {
   private constructor();
   free(): void;
-  static init(is_modbus?: boolean, level?: string): void;
+  static init(is_modbus?: boolean | null, level?: string | null): void;
   static get_sdk_version(): string;
   /**
    * 接收数据

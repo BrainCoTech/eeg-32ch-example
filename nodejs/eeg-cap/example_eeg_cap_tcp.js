@@ -148,12 +148,11 @@ function start_eeg_stream(client) {
     )
   );
   sendCommand(client, proto_sdk.get_eeg_config); // 读取EEG配置, 计算EEG电压值用到配置信息, gain
-  sendCommand(client, proto_sdk.start_eeg_stream); // 开启连续EEG数据流通知
+  sendCommand(client, proto_sdk.start_eeg_stream); // 订阅EEG数据流
 }
 
-// 停止EEG数据流
 function stop_eeg_stream(client) {
-  sendCommand(client, proto_sdk.stop_eeg_stream);
+  sendCommand(client, proto_sdk.stop_eeg_stream); // 取消订阅EEG数据流
 }
 
 function start_imu_stream(client) {
@@ -162,7 +161,11 @@ function start_imu_stream(client) {
   // sendCommand(client, () => proto_sdk.set_imu_config(ImuSampleRate.SR_100Hz));
   // 读取配置
   sendCommand(client, proto_sdk.get_imu_config);
-  sendCommand(client, proto_sdk.start_imu_stream); // 开启连续IMU数据流通知
+  sendCommand(client, proto_sdk.start_imu_stream); // 订阅IMU数据流
+}
+
+function stop_imu_stream(client) {
+  sendCommand(client, proto_sdk.stop_imu_stream); // 取消订阅IMU数据流
 }
 
 // 连接到发现的服务
