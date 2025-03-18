@@ -2,13 +2,13 @@ import asyncio
 import logging
 
 from logger import getLogger
-import bc_proto_sdk
-from bc_proto_sdk import MessageParser, MsgType
+import bc_device_sdk as sdk
+from bc_device_sdk import MessageParser, MsgType
 
 # logger = getLogger(logging.DEBUG)
 logger = getLogger(logging.INFO)
-ecap = bc_proto_sdk.eeg_cap
-ble = bc_proto_sdk.ble
+ecap = sdk.eeg_cap
+ble = sdk.ble
 parser = MessageParser("ecap-ble", MsgType.EEGCap)
 loop = None
 
@@ -42,8 +42,8 @@ async def stop_scan_and_connect(id):
 
 def on_device_discovered(id, device):
     logger.info(f"Device {id} discovered: {device.name}")
-    if device.name == "Zephyr [EEG-776E2]":
-        # if device.name == "Zephyr [EEG-E5FF3]":
+    # if device.name == "Zephyr [EEG-776E2]":
+    if device.name == "Zephyr [EEG-E5FF3]":
         logger.info(f"found device")
         asyncio.run_coroutine_threadsafe(stop_scan_and_connect(id), loop)
 
@@ -61,7 +61,7 @@ def on_received_data(id, data):
 
 
 async def main():
-    ecap.set_msg_resp_callback(lambda msg: logger.warning(f"Message response: {msg}"))
+    sdk.set_msg_resp_callback(lambda msg: logger.warning(f"Message response: {msg}"))
 
     # logger.info("Starting BLE adapter")
     # print(ble.set_adapter_state_callback)

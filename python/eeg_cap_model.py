@@ -1,9 +1,9 @@
 # from enum import IntEnum  # Enum declarations
 # import json
 # import base64
-import bc_proto_sdk
+import bc_device_sdk
 
-eeg_cap = bc_proto_sdk.eeg_cap
+eeg_cap = bc_device_sdk.eeg_cap
 
 
 async def get_addr_port():
@@ -21,18 +21,18 @@ async def get_addr_port():
     # 如果已知IP地址和端口，可以直接指定
     # (addr, port) = ("192.168.3.7", 53129)  # hailong-dev
     # (addr, port) = ("192.168.3.12", 53129)  # xiangao-dev
-    (addr, port) = ("192.168.3.23", 53129) # yongle-dev
+    (addr, port) = ("192.168.3.23", 53129)  # yongle-dev
 
     return (addr, port)
 
 
 # 默认50Hz环境噪声滤波，fs默认 250Hz
 def set_env_noise_filter_cfg(type, fs: float = 250):
-    return eeg_cap.set_env_noise_filter_cfg(type, fs)
+    return bc_device_sdk.set_env_noise_filter_cfg(type, fs)
 
 
 def remove_env_noise(data: list, channel: int):
-    return eeg_cap.remove_env_noise(data, channel)
+    return bc_device_sdk.remove_env_noise(data, channel)
 
 
 def perfrom_impendance_filter(data: list, channel: int):
@@ -83,7 +83,7 @@ class IMUCord:
 
 class IMUData:
     @staticmethod
-    def from_data(arr: bytes):
+    def from_data(arr: list):
         return IMUData(arr[0], arr[1:4], arr[4:7], arr[7:])
 
     def __init__(self, timestamp, acc, gyro, mag):

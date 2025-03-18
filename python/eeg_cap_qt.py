@@ -7,7 +7,8 @@ from pyqtgraph.Qt.QtWidgets import QApplication
 from qasync import QEventLoop
 
 from logger import getLogger
-from bc_proto_sdk import MessageParser, MsgType, PyTcpClient, NoiseTypes
+import bc_device_sdk as sdk
+from bc_device_sdk import MessageParser, MsgType, PyTcpClient, NoiseTypes
 from eeg_cap_model import (
     EEGData,
     eeg_cap,
@@ -32,7 +33,7 @@ order = 4  # 滤波器阶数
 low_cut = 2  # 低通滤波截止频率
 high_cut = 45  # 高通滤波截止频率
 bs_filters = [
-    eeg_cap.BandPassFilter(fs, low_cut, high_cut) for i in range(num_channels)
+    sdk.BandPassFilter(fs, low_cut, high_cut) for i in range(num_channels)
 ]
 
 # 创建32个通道的图表
@@ -69,16 +70,11 @@ def update_plot():
 
 async def scan_and_connect(loop):
     (addr, port) = await get_addr_port()
+    client = eeg_cap.ECapClient(addr, port)
 
-    # 创建消息解析器
-    parser = MessageParser("eeg-cap-device", MsgType.EEGCap)
-    # 开始消息流
-    await parser.start_message_stream()
-
-    # 创建TCP客户端
-    client = PyTcpClient(addr, port)
-    # 连接设备
-    await client.connect(parser)
+    # 连接设备，监听消息
+    parser = sdk.MessageParser("eeg-cap-device", sdk.MsgType.EEGCap)
+    await client.start_data_stream(parser)
 
     # 获取设备信息
     # await client.get_device_info()

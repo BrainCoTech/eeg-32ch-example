@@ -1,9 +1,8 @@
 import asyncio
 import logging
-import numpy as np
 
 from logger import getLogger
-from bc_proto_sdk import MessageParser, MsgType, PyTcpClient, NoiseTypes
+import bc_device_sdk as sdk
 from eeg_cap_model import (
     eeg_cap,
     get_addr_port,
@@ -20,16 +19,13 @@ num_channels = 32  # 通道数
 
 async def scan_and_connect():
     (addr, port) = await get_addr_port()
+    client = eeg_cap.ECapClient(addr, port)
 
-    # 创建消息解析器
-    parser = MessageParser("eeg-cap-device", MsgType.EEGCap)
-    # 开始消息流
-    await parser.start_message_stream()
-
-    # 创建TCP客户端
-    client = PyTcpClient(addr, port)
-    # 连接设备
-    await client.connect(parser)
+    # 连接设备，监听消息
+    parser = sdk.MessageParser("eeg-cap-device", sdk.MsgType.EEGCap)
+    await client.start_data_stream(parser)
+    
+    # 开始检测阻抗
     await start_leadoff_check(client)
 
 
@@ -37,7 +33,7 @@ async def scan_and_connect():
 async def start_leadoff_check(client):
     # fmt: off
     # 设置阻抗检测结果回调
-    eeg_cap.set_imp_data_callback(lambda chip, values: logger.info(f"chip: {chip}, impendance values: {values}"))
+    sdk.set_imp_data_callback(lambda chip, values: logger.info(f"chip: {chip}, impendance values: {values}"))
     # 是否循环检测芯片1~4
     # loop_check = True
     loop_check = False
@@ -51,8 +47,8 @@ async def stop_leadoff_check(client):
 
 def init_cfg():
     logger.info("Init cfg")
-    set_env_noise_filter_cfg(NoiseTypes.FIFTY, fs)  # 滤波器参数设置，去除50Hz电流干扰
-    eeg_cap.set_msg_resp_callback(
+    set_env_noise_filter_cfg(sdk.NoiseTypes.FIFTY, fs)  # 滤波器参数设置，去除50Hz电流干扰
+    sdk.set_msg_resp_callback(
         lambda msg: logger.warning(f"Message response: {msg}")
     )
 

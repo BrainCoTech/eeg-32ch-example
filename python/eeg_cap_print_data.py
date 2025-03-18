@@ -3,7 +3,8 @@ import logging
 import numpy as np
 
 from logger import getLogger
-from bc_proto_sdk import MessageParser, MsgType, PyTcpClient, NoiseTypes
+import bc_device_sdk as sdk
+from bc_device_sdk import MessageParser, MsgType, NoiseTypes
 from eeg_cap_model import (
     EEGData,
     IMUData,
@@ -29,7 +30,7 @@ order = 4  # 滤波器阶数
 low_cut = 2  # 低通滤波截止频率
 high_cut = 45  # 高通滤波截止频率
 bs_filters = [
-    eeg_cap.BandPassFilter(fs, low_cut, high_cut) for i in range(num_channels)
+    sdk.BandPassFilter(fs, low_cut, high_cut) for i in range(num_channels)
 ]
 
 
@@ -102,16 +103,11 @@ def print_eeg_timestamps(data):
 
 async def scan_and_connect():
     (addr, port) = await get_addr_port()
+    client = eeg_cap.ECapClient(addr, port)
 
-    # 创建消息解析器
+    # 连接设备，监听消息
     parser = MessageParser("eeg-cap-device", MsgType.EEGCap)
-    # 开始消息流
-    await parser.start_message_stream()
-
-    # 创建TCP客户端
-    client = PyTcpClient(addr, port)
-    # 连接设备
-    await client.connect(parser)
+    await client.start_data_stream(parser)
 
     # 获取EEG配置
     msgId = await client.get_eeg_config()
@@ -130,7 +126,7 @@ def init_cfg():
     logger.info("Init cfg")
     set_env_noise_filter_cfg(NoiseTypes.FIFTY, fs)  # 滤波器参数设置，去除50Hz电流干扰
     set_eeg_buffer_length(eeg_buffer_length)  # 设置EEG数据缓冲区长度
-    eeg_cap.set_msg_resp_callback(
+    sdk.set_msg_resp_callback(
         lambda msg: logger.warning(f"Message response: {msg}")
     )
 
