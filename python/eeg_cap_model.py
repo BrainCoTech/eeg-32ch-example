@@ -50,7 +50,7 @@ def set_imu_buffer_length(len: int):
 # 定义 EEGData 类
 class EEGData:
     @staticmethod
-    def from_data(arr: bytes):
+    def from_data(arr: list):
         return EEGData(arr[0], arr[1:])
 
     def __init__(self, timestamp, channel_values):
