@@ -1,5 +1,3 @@
-import { apply_bandstop } from "../pkg/bc_proto_sdk.js";
-
 let proto_sdk = null;
 let tcp_message_parser = null;
 let ble_message_parser = null;
@@ -20,11 +18,11 @@ async function initSDK() {
   if (proto_sdk) return;
 
   console.debug("initSDK");
-  proto_sdk = await import("../pkg/bc_proto_sdk.js");
+  proto_sdk = await import("../pkg/bc_device_sdk.js");
   // console.log("proto_sdk", proto_sdk);
   // 初始化日志记录
-  // proto_sdk.init_logging("debug");
-  proto_sdk.init_logging("info");
+  // proto_sdk.init_logging(proto_sdk.LogLevel.Debug);
+  proto_sdk.init_logging(proto_sdk.LogLevel.Info);
 
   // 用原始 proto_sdk 作为原型，创建一个新的对象
   proto_sdk = Object.create(proto_sdk);

@@ -31,8 +31,8 @@ function initCfg() {
   proto_sdk.set_env_noise_filter_cfg(NoiseTypes.FIFTY, fs); // 设置环境噪声滤波器，50Hz 电源干扰
   proto_sdk.set_eeg_buffer_cfg(eeg_buffer_length); // 设置EEG数据缓冲区长度
   proto_sdk.set_imu_buffer_cfg(imu_buffer_length); // 设置IMU数据缓冲区长度
-  proto_sdk.on("resp", (resp) => {
-    console.log("on msg resp", resp);
+  proto_sdk.on("resp", (device_id, resp) => {
+    console.log(`[${device_id}] resp received, ${resp}`);
   });
 }
 
@@ -138,7 +138,6 @@ function start_eeg_stream(client) {
   //     EegSignalSource.NORMAL
   //   )
   // );
-
   // 250Hz，增益为1倍，测试信号，循环 1Hz 方波
   sendCommand(client, () =>
     proto_sdk.set_eeg_config(
@@ -147,6 +146,14 @@ function start_eeg_stream(client) {
       EegSignalSource.TEST_SIGNAL
     )
   );
+  // 500Hz, 增益为1倍，正常信号
+  // sendCommand(client, () =>
+  //   proto_sdk.set_eeg_config(
+  //     EegSampleRate.SR_500Hz,
+  //     EegSignalGain.GAIN_1,
+  //     EegSignalSource.NORMAL,
+  //   )
+  // );
   sendCommand(client, proto_sdk.get_eeg_config); // 读取EEG配置, 计算EEG电压值用到配置信息, gain
   sendCommand(client, proto_sdk.start_eeg_stream); // 订阅EEG数据流
 }
@@ -178,10 +185,10 @@ async function connectToService(address, port) {
     // sendCommand(client, proto_sdk.get_device_info);
 
     // 开启阻抗检测模式，与正常EEG模式互斥
-    start_leadoff_check();
+    // start_leadoff_check();
 
     // 开启正常工作模式
-    // start_eeg_stream(client);
+    start_eeg_stream(client);
     // start_imu_stream(client);
   });
 

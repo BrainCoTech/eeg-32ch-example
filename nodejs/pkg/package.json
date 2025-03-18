@@ -1,20 +1,20 @@
 {
-  "name": "bc_proto_sdk",
+  "name": "bc_device_sdk",
   "collaborators": [
     "BrainCo"
   ],
   "description": "BrainCo FW proto message SDK",
-  "version": "0.2.7",
+  "version": "0.1.9",
   "license": "",
   "repository": {
     "type": "git",
     "url": "https://github.com/BrainCoTech/bc_proto_sdk"
   },
   "files": [
-    "bc_proto_sdk_bg.wasm",
-    "bc_proto_sdk.js",
-    "bc_proto_sdk.d.ts"
+    "bc_device_sdk_bg.wasm",
+    "bc_device_sdk.js",
+    "bc_device_sdk.d.ts"
   ],
-  "main": "bc_proto_sdk.js",
-  "types": "bc_proto_sdk.d.ts"
+  "main": "bc_device_sdk.js",
+  "types": "bc_device_sdk.d.ts"
 }

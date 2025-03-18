@@ -5,9 +5,9 @@ import {
 } from "./example_eeg_cap.js";
 
 function initCfg() {
-  console.log("initCfg");
-  proto_sdk.on("resp", (resp) => {
-    console.log("on msg resp", resp);
+  // console.log("initCfg");
+  proto_sdk.on("resp", (device_id, resp) => {
+    console.log(`[${device_id}] resp received, ${resp}`);
   });
 }
 

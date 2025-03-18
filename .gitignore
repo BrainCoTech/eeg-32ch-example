@@ -162,3 +162,4 @@ cython_debug/
 #.idea/
 .python-version
 nodejs/eeg-cap/test.js
+nodejs/eeg-cap/test_tcp_con.js
